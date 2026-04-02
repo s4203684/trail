@@ -494,7 +494,7 @@ const App = (() => {
     UI.openModal('modal-topic-detail');
   }
 
-    // ── SESSION CHECK-IN ──────────────────────────────────────────────────
+  // ── SESSION CHECK-IN ──────────────────────────────────────────────────
   function openCheckin(prefillSubjectId, prefillTopicId) {
     // Check if session already active
     const active = ST.getActiveSession();
@@ -558,33 +558,22 @@ const App = (() => {
       populateTopicDropdown(subjectSel.value, '');
       updateLastStoppedHint(subjectSel.value, '');
     });
-
     topicSel.addEventListener('change', () => {
       updateLastStoppedHint(subjectSel.value, topicSel.value);
     });
 
     document.getElementById('ci-submit').addEventListener('click', () => {
       const subjectId = subjectSel.value;
-      const topicId = topicSel.value || null;
+      const topicId = topicSel.value;
       const lastStopped = document.getElementById('ci-last-stopped').value.trim();
       const goal = document.getElementById('ci-goal').value.trim();
 
-      if (!subjectId) {
-        UI.toast('Select a subject', 'error');
-        return;
-      }
+      if (!subjectId) { UI.toast('Select a subject', 'error'); return; }
+      if (!goal) { UI.toast('What do you want to achieve this session?', 'error'); return; }
 
-      if (!goal) {
-        UI.toast('What do you want to achieve this session?', 'error');
-        return;
-      }
-
-      ST.startSession(subjectId, topicId, lastStopped, goal);
-
+      ST.startSession(subjectId, topicId || null, lastStopped, goal);
       // Update topic to in-progress only if a topic was selected
-      if (topicId) {
-        ST.updateTopic(subjectId, topicId, { status: 'in-progress' });
-      }
+      if (topicId) ST.updateTopic(subjectId, topicId, { status: 'in-progress' });
 
       UI.closeModal('modal-checkin');
       UI.toast('Session started! Go study. 📚');
@@ -597,10 +586,7 @@ const App = (() => {
   // ── SESSION CHECK-OUT ─────────────────────────────────────────────────
   function openCheckout() {
     const active = ST.getActiveSession();
-    if (!active) {
-      UI.toast('No active session found', 'error');
-      return;
-    }
+    if (!active) { UI.toast('No active session found', 'error'); return; }
 
     const subj = ST.getSubject(active.subjectId);
     const topic = active.topicId ? subj?.topics.find(t => t.id === active.topicId) : null;
@@ -620,14 +606,10 @@ const App = (() => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
-
     const revEl = document.getElementById('co-needs-revision');
     if (revEl) revEl.checked = false;
-
     const statusEl = document.getElementById('co-status');
-    if (statusEl) {
-      statusEl.value = topic ? topic.status : 'in-progress';
-    }
+    if (statusEl) statusEl.value = topic ? topic.status : 'in-progress';
 
     UI.openModal('modal-checkout');
   }
@@ -635,10 +617,7 @@ const App = (() => {
   function bindCheckoutForm() {
     document.getElementById('co-submit').addEventListener('click', () => {
       const active = ST.getActiveSession();
-      if (!active) {
-        UI.closeModal('modal-checkout');
-        return;
-      }
+      if (!active) { UI.closeModal('modal-checkout'); return; }
 
       const completed = document.getElementById('co-completed').value.trim();
       const understood = document.getElementById('co-understood').value.trim();
@@ -653,11 +632,9 @@ const App = (() => {
       });
 
       // Update topic status only if this session had a topic
-      if (newStatus && active.topicId) {
-        ST.updateTopic(active.subjectId, active.topicId, { status: newStatus });
-      }
+      if (newStatus && active.topicId) ST.updateTopic(active.subjectId, active.topicId, { status: newStatus });
 
-      // Save stumble even if topic is null
+      // If there's a stumble note, save it
       if (stumbled) {
         ST.addStumble(active.subjectId, active.topicId || null, 'other', stumbled);
       }
@@ -669,3 +646,325 @@ const App = (() => {
       else if (currentPage === 'subject') renderSubjectPage(currentSubjectId);
     });
   }
+
+  // ── STUMBLES PAGE ─────────────────────────────────────────────────────
+  function renderStumbles() {
+    const stumbles = ST.getStumbles().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const open = stumbles.filter(s => !s.resolved);
+    const resolved = stumbles.filter(s => s.resolved);
+
+    const p = document.getElementById('page-stumbles');
+
+    const renderStumble = (s) => {
+      const subj = ST.getSubject(s.subjectId);
+      const topic = s.topicId ? ST.getTopic(s.subjectId, s.topicId) : null;
+      return `
+        <div class="stumble-card ${s.resolved ? 'resolved' : ''}">
+          <div class="flex items-start justify-between gap-12">
+            <div style="flex:1">
+              <div class="stumble-subject-tag">
+                ${subj ? UI.esc(subj.name) : 'General'}
+                ${topic ? ' → ' + UI.esc(topic.name) : ''}
+                · ${UI.stumbleTypeLabel(s.type)}
+              </div>
+              <div class="stumble-text">${UI.esc(s.text)}</div>
+              <div class="stumble-date">${UI.relativeTime(s.createdAt)}</div>
+            </div>
+            <div class="flex gap-6">
+              ${!s.resolved ? `
+                <button class="btn btn-sm btn-secondary" onclick="App.resolveStumble('${s.id}')">Resolve</button>
+              ` : '<span class="status-badge status-completed">Resolved</span>'}
+              <button class="btn btn-sm btn-danger" onclick="App.deleteStumble('${s.id}')">×</button>
+            </div>
+          </div>
+        </div>`;
+    };
+
+    p.innerHTML = `
+      <div class="flex items-start justify-between gap-16 mb-32">
+        <div>
+          <h1 class="page-title">Stumble Tracker</h1>
+          <p class="page-subtitle">Confusions, blockers, questions, and mistakes you've noted</p>
+        </div>
+        <button class="btn btn-primary" onclick="UI.openModal('modal-add-stumble')">+ Log Stumble</button>
+      </div>
+
+      ${open.length === 0 && resolved.length === 0 ? UI.emptyState('⚑', 'No stumbles logged', 'When something confuses you or blocks your progress, log it here so you don\'t forget.', '+ Log Stumble', "UI.openModal('modal-add-stumble')") : ''}
+
+      ${open.length > 0 ? `
+      <div style="margin-bottom:32px">
+        <h2 class="section-title">Open (${open.length})</h2>
+        <div class="flex-col gap-10">${open.map(renderStumble).join('')}</div>
+      </div>` : ''}
+
+      ${resolved.length > 0 ? `
+      <div>
+        <h2 class="section-title" style="color:var(--ink-ghost)">Resolved (${resolved.length})</h2>
+        <div class="flex-col gap-10">${resolved.slice(0,10).map(renderStumble).join('')}</div>
+      </div>` : ''}
+    `;
+  }
+
+  function resolveStumble(id) {
+    ST.resolveStumble(id);
+    UI.toast('Marked as resolved');
+    renderStumbles();
+  }
+
+  function deleteStumble(id) {
+    if (!UI.confirm('Delete this stumble?')) return;
+    ST.deleteStumble(id);
+    renderStumbles();
+  }
+
+  function bindAddStumbleModal() {
+    // Populate subject select
+    document.getElementById('as-subject').addEventListener('focus', () => {
+      const subjects = ST.getSubjects();
+      const sel = document.getElementById('as-subject');
+      sel.innerHTML = '<option value="">General (no subject)</option>' +
+        subjects.map(s => `<option value="${s.id}">${UI.esc(s.name)}</option>`).join('');
+    });
+
+    document.getElementById('as-subject').addEventListener('change', () => {
+      const subjectId = document.getElementById('as-subject').value;
+      const topicSel = document.getElementById('as-topic');
+      topicSel.innerHTML = '<option value="">No specific topic</option>';
+      if (!subjectId) return;
+      const subject = ST.getSubject(subjectId);
+      if (!subject) return;
+      topicSel.innerHTML += subject.topics.map(t =>
+        `<option value="${t.id}">${UI.esc(t.name)}</option>`
+      ).join('');
+    });
+
+    document.getElementById('as-submit').addEventListener('click', () => {
+      const subjectId = document.getElementById('as-subject').value || null;
+      const topicId = document.getElementById('as-topic').value || null;
+      const type = document.getElementById('as-type').value;
+      const text = document.getElementById('as-text').value.trim();
+      if (!text) { UI.toast('Describe the stumble', 'error'); return; }
+      ST.addStumble(subjectId, topicId, type, text);
+      document.getElementById('as-text').value = '';
+      UI.closeModal('modal-add-stumble');
+      UI.toast('Stumble logged');
+      if (currentPage === 'stumbles') renderStumbles();
+    });
+  }
+
+  // ── TIMELINE PAGE ─────────────────────────────────────────────────────
+  function renderTimeline() {
+    const entries = ST.getTimeline();
+    const p = document.getElementById('page-timeline');
+
+    if (entries.length === 0) {
+      p.innerHTML = `
+        <h1 class="page-title" style="margin-bottom:8px">Your Journey</h1>
+        <p class="page-subtitle" style="margin-bottom:32px">Every action you take is recorded here</p>
+        ${UI.emptyState('📖', 'Your trail starts here', 'Every session, status change, and stumble you log will appear on your timeline.')}`;
+      return;
+    }
+
+    // Group by date
+    const grouped = {};
+    entries.forEach(e => {
+      const date = new Date(e.at).toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      if (!grouped[date]) grouped[date] = [];
+      grouped[date].push(e);
+    });
+
+    const timelineHTML = Object.entries(grouped).map(([date, dayEntries]) => `
+      <div style="margin-bottom:32px">
+        <div class="mono-label" style="margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--paper-deep)">${date}</div>
+        <div class="timeline">
+          ${dayEntries.map(e => {
+            const subj = e.meta && e.meta.subjectId ? ST.getSubject(e.meta.subjectId) : null;
+            const detailParts = [];
+            if (subj) detailParts.push(subj.name);
+            if (e.meta && e.meta.from && e.meta.to) {
+              detailParts.push(`${UI.statusLabel(e.meta.from)} → ${UI.statusLabel(e.meta.to)}`);
+            }
+            return `
+              <div class="timeline-entry">
+                ${UI.timelineDot(e.type)}
+                <div class="timeline-body">
+                  <div class="timeline-time">${UI.formatDateTime(e.at)}</div>
+                  <div class="timeline-title">${UI.esc(e.description)}</div>
+                  ${detailParts.length ? `<div class="timeline-detail">${detailParts.map(UI.esc).join(' · ')}</div>` : ''}
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('');
+
+    p.innerHTML = `
+      <div class="flex items-start justify-between gap-16 mb-32">
+        <div>
+          <h1 class="page-title">Your Journey</h1>
+          <p class="page-subtitle">${entries.length} events recorded on your trail</p>
+        </div>
+      </div>
+      ${timelineHTML}`;
+  }
+
+  // ── NOTES PAGE ────────────────────────────────────────────────────────
+  function renderNotes() {
+    const subjects = ST.getSubjects();
+    const p = document.getElementById('page-notes');
+
+    if (subjects.length === 0) {
+      p.innerHTML = `
+        <h1 class="page-title" style="margin-bottom:8px">Notes</h1>
+        ${UI.emptyState('✎', 'No subjects yet', 'Add subjects first to keep notes under them.')}`;
+      return;
+    }
+
+    const notesHTML = subjects.map(s => {
+      const topicNotesHTML = s.topics.filter(t => t.notes).map(t => `
+        <div class="card-sm" style="margin-bottom:8px">
+          <div class="flex items-center gap-8 mb-6">
+            <span class="text-xs mono-label">${UI.esc(t.name)}</span>
+            ${UI.statusBadge(t.status)}
+          </div>
+          <div class="text-sm" style="white-space:pre-wrap;color:var(--ink-mid)">${UI.esc(t.notes)}</div>
+        </div>`).join('');
+
+      return `
+        <div class="card" style="margin-bottom:16px">
+          <div class="flex items-center gap-10 mb-16">
+            <div style="width:10px;height:10px;border-radius:50%;background:${UI.subjectColor(s.colorIdx)}"></div>
+            <h2 class="section-title" style="margin:0">${UI.esc(s.name)}</h2>
+          </div>
+          ${s.notes ? `
+            <div class="card-paper" style="margin-bottom:12px">
+              <div class="mono-label mb-4">Subject notes</div>
+              <div class="text-sm" style="white-space:pre-wrap;color:var(--ink-mid)">${UI.esc(s.notes)}</div>
+            </div>` : ''}
+          ${topicNotesHTML || '<p class="text-sm text-ghost italic">No topic notes yet.</p>'}
+        </div>`;
+    }).join('');
+
+    p.innerHTML = `
+      <h1 class="page-title" style="margin-bottom:8px">Notes</h1>
+      <p class="page-subtitle" style="margin-bottom:32px">Your collected notes across all subjects and topics</p>
+      ${notesHTML}`;
+  }
+
+  // ── SETTINGS PAGE ─────────────────────────────────────────────────────
+  function renderSettings() {
+    const settings = ST.getSettings();
+    const subjects = ST.getSubjects();
+    const p = document.getElementById('page-settings');
+
+    p.innerHTML = `
+      <h1 class="page-title" style="margin-bottom:32px">Settings</h1>
+
+      <div class="card" style="margin-bottom:20px">
+        <h2 class="section-title">Your Name</h2>
+        <div class="flex gap-10">
+          <input class="field-input" id="settings-name" value="${UI.esc(settings.name)}" placeholder="Your name" style="flex:1">
+          <button class="btn btn-primary" onclick="App.saveSettingsName()">Save</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="flex items-center justify-between mb-16">
+          <h2 class="section-title" style="margin:0">Subjects (${subjects.length})</h2>
+          <button class="btn btn-ghost btn-sm" onclick="UI.openModal('modal-add-subject')">+ Add Subject</button>
+        </div>
+        ${subjects.map(s => `
+          <div class="flex items-center gap-12" style="padding:10px 0;border-bottom:1px solid var(--paper-deep)">
+            <div style="width:10px;height:10px;border-radius:50%;background:${UI.subjectColor(s.colorIdx)};flex-shrink:0"></div>
+            <span class="flex-1">${UI.esc(s.name)}</span>
+            <span class="text-xs text-ghost">${s.topics.length} topics</span>
+            <button class="btn btn-danger btn-sm" onclick="App.deleteSubject('${s.id}')">Delete</button>
+          </div>`).join('')}
+      </div>
+
+      <div class="card" style="border-color:#f5c6bf">
+        <h2 class="section-title" style="color:var(--red)">Reset All Data</h2>
+        <p class="text-sm text-soft" style="margin-bottom:16px">This will permanently delete all your subjects, topics, sessions, stumbles, and timeline. This cannot be undone.</p>
+        <button class="btn btn-danger" onclick="App.resetAll()">Reset Everything</button>
+      </div>
+    `;
+  }
+
+  function saveSettingsName() {
+    const val = document.getElementById('settings-name').value.trim();
+    if (!val) return;
+    ST.saveSettings({ ...ST.getSettings(), name: val });
+    buildSidebar();
+    UI.toast('Name saved');
+  }
+
+  function deleteSubject(id) {
+    const s = ST.getSubject(id);
+    if (!s) return;
+    if (!UI.confirm(`Delete subject "${s.name}" and all its topics? This cannot be undone.`)) return;
+    ST.deleteSubject(id);
+    buildSidebar();
+    UI.toast('Subject deleted');
+    renderSettings();
+  }
+
+  function resetAll() {
+    if (!UI.confirm('RESET EVERYTHING? All data will be permanently deleted.')) return;
+    if (!UI.confirm('Are you absolutely sure? This cannot be undone.')) return;
+    ST.resetAll();
+    location.reload();
+  }
+
+  // ── ADD SUBJECT MODAL ─────────────────────────────────────────────────
+  function bindAddSubjectModal() {
+    document.getElementById('modal-add-subject-submit').addEventListener('click', () => {
+      const name = document.getElementById('new-subject-name').value.trim();
+      const notes = document.getElementById('new-subject-notes').value.trim();
+      if (!name) { UI.toast('Subject name required', 'error'); return; }
+      ST.addSubject(name, notes);
+      document.getElementById('new-subject-name').value = '';
+      document.getElementById('new-subject-notes').value = '';
+      UI.closeModal('modal-add-subject');
+      UI.toast(`Subject "${name}" added`);
+      buildSidebar();
+      if (currentPage === 'dashboard') renderDashboard();
+      else if (currentPage === 'settings') renderSettings();
+    });
+  }
+
+  // ── ADD TOPIC MODAL ───────────────────────────────────────────────────
+  let addTopicSubjectId = null;
+
+  function openAddTopic(subjectId) {
+    addTopicSubjectId = subjectId;
+    const subject = ST.getSubject(subjectId);
+    document.getElementById('add-topic-subject-name').textContent = subject ? subject.name : '';
+    document.getElementById('new-topic-name').value = '';
+    document.getElementById('new-topic-notes').value = '';
+    UI.openModal('modal-add-topic');
+  }
+
+  function bindAddTopicModal() {
+    document.getElementById('modal-add-topic-submit').addEventListener('click', () => {
+      const name = document.getElementById('new-topic-name').value.trim();
+      const notes = document.getElementById('new-topic-notes').value.trim();
+      if (!name) { UI.toast('Topic name required', 'error'); return; }
+      if (!addTopicSubjectId) { UI.toast('No subject selected', 'error'); return; }
+      ST.addTopic(addTopicSubjectId, name, notes);
+      UI.closeModal('modal-add-topic');
+      UI.toast(`Topic "${name}" added`);
+      goToSubject(addTopicSubjectId);
+    });
+  }
+
+  return {
+    init, navigate,
+    goToDashboard, goToSubject, goToStumbles, goToTimeline, goToNotes, goToSettings,
+    openCheckin, openCheckout, startCheckin,
+    filterTopics, changeTopicStatus, saveSubjectNotes,
+    openTopicDetail,
+    renderSubjectPage,
+    resolveStumble, deleteStumble,
+    saveSettingsName, deleteSubject, resetAll,
+    openAddTopic
+  };
+})();
