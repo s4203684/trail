@@ -6,314 +6,173 @@
   <title>StudyTrail</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f5f5f0;
-      color: #1a1a1a;
-      min-height: 100vh;
-    }
-
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
     .shell { display: flex; min-height: 100vh; }
 
     /* ── Sidebar ── */
-    .sidebar {
-      width: 220px;
-      background: #1a1a1a;
-      color: #fff;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      position: fixed;
-      top: 0; left: 0;
-      height: 100vh;
-      overflow-y: auto;
-    }
-    .sidebar-brand {
-      padding: 24px 20px 16px;
-      font-size: 1.2rem;
-      font-weight: 700;
-      border-bottom: 1px solid #2a2a2a;
-    }
-    .sidebar-brand span {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 400;
-      color: #666;
-      margin-top: 2px;
-    }
-    .sidebar-section {
-      padding: 16px 20px 6px;
-      font-size: 0.62rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #444;
-    }
-    .sidebar-btn {
-      display: block;
-      width: 100%;
-      text-align: left;
-      padding: 8px 20px;
-      background: none;
-      border: none;
-      color: #888;
-      font-size: 0.85rem;
-      cursor: pointer;
-      border-left: 2px solid transparent;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .sidebar-btn:hover { color: #fff; background: #222; }
-    .sidebar-btn.active { color: #fff; border-left-color: #4caf50; background: #1a2a1a; }
+    .sidebar { width: 220px; background: #1a1a1a; color: #fff; flex-shrink: 0; position: fixed; top:0; left:0; height:100vh; overflow-y:auto; display:flex; flex-direction:column; }
+    .sidebar-brand { padding: 24px 20px 16px; font-size: 1.2rem; font-weight: 700; border-bottom: 1px solid #2a2a2a; }
+    .sidebar-brand span { display:block; font-size:0.75rem; font-weight:400; color:#666; margin-top:2px; }
+    .sidebar-section { padding: 16px 20px 6px; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.1em; color:#444; }
+    .sidebar-btn { display:block; width:100%; text-align:left; padding:8px 20px; background:none; border:none; color:#888; font-size:0.85rem; cursor:pointer; border-left:2px solid transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sidebar-btn:hover { color:#fff; background:#222; }
+    .sidebar-btn.active { color:#fff; border-left-color:#4caf50; background:#1a2a1a; }
+    .sidebar-remind { display:inline-block; background:#c0392b; color:#fff; font-size:0.65rem; border-radius:10px; padding:1px 6px; margin-left:6px; font-weight:600; vertical-align:middle; }
 
     /* ── Main ── */
-    .main {
-      margin-left: 220px;
-      flex: 1;
-      padding: 32px 36px;
-      max-width: 860px;
-    }
+    .main { margin-left:220px; flex:1; padding:32px 36px; max-width:900px; }
 
     /* ── Page header ── */
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-      gap: 12px;
-    }
-    .page-title { font-size: 1.5rem; font-weight: 700; }
+    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; gap:12px; flex-wrap:wrap; }
+    .page-title { font-size:1.5rem; font-weight:700; }
 
     /* ── Buttons ── */
-    .btn {
-      padding: 8px 16px;
-      border-radius: 7px;
-      border: none;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .btn-green { background: #2d6a4f; color: #fff; }
-    .btn-green:hover { background: #245a42; }
-    .btn-gray  { background: #f0f0ec; color: #333; border: 1px solid #e0e0da; }
-    .btn-gray:hover  { background: #e4e4e0; }
-    .btn-red   { background: #fce8e4; color: #c0392b; border: 1px solid #f5c6bf; }
-    .btn-red:hover   { background: #f8d5d0; }
-    .btn-ghost { background: none; color: #888; border: 1px solid #ddd; }
-    .btn-ghost:hover { background: #f0f0ec; color: #333; }
-    .btn-sm    { padding: 5px 10px; font-size: 0.78rem; }
+    .btn { padding:8px 16px; border-radius:7px; border:none; font-size:0.85rem; font-weight:500; cursor:pointer; white-space:nowrap; }
+    .btn-green { background:#2d6a4f; color:#fff; } .btn-green:hover { background:#245a42; }
+    .btn-gray  { background:#f0f0ec; color:#333; border:1px solid #e0e0da; } .btn-gray:hover { background:#e4e4e0; }
+    .btn-red   { background:#fce8e4; color:#c0392b; border:1px solid #f5c6bf; } .btn-red:hover { background:#f8d5d0; }
+    .btn-ghost { background:none; color:#888; border:1px solid #ddd; } .btn-ghost:hover { background:#f0f0ec; color:#333; }
+    .btn-amber { background:#fdf0e0; color:#b5651d; border:1px solid #f5ddb0; } .btn-amber:hover { background:#fae8ca; }
+    .btn-sm { padding:5px 10px; font-size:0.78rem; }
 
     /* ── Forms ── */
-    input, textarea, select {
-      width: 100%;
-      padding: 9px 12px;
-      border: 1.5px solid #ddd;
-      border-radius: 7px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      background: #fafaf8;
-      color: #1a1a1a;
-    }
-    input:focus, textarea:focus, select:focus {
-      outline: none;
-      border-color: #2d6a4f;
-      background: #fff;
-    }
-    textarea { resize: vertical; min-height: 68px; }
-    label { display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 5px; color: #555; }
-    .field { margin-bottom: 14px; }
+    input, textarea, select { width:100%; padding:9px 12px; border:1.5px solid #ddd; border-radius:7px; font-size:0.9rem; font-family:inherit; background:#fafaf8; color:#1a1a1a; }
+    input:focus, textarea:focus, select:focus { outline:none; border-color:#2d6a4f; background:#fff; }
+    textarea { resize:vertical; min-height:68px; }
+    label { display:block; font-size:0.8rem; font-weight:500; margin-bottom:5px; color:#555; }
+    .field { margin-bottom:14px; }
 
     /* ── Pages ── */
-    .page { display: none; }
-    .page.active { display: block; }
+    .page { display:none; } .page.active { display:block; }
 
-    /* ── Subject cards ── */
-    .subject-card {
+    /* ── Subject cards (list) ── */
+    .subject-card { background:#fff; border:1px solid #e8e8e4; border-radius:12px; padding:18px 20px; margin-bottom:10px; transition:box-shadow 0.15s; }
+    .subject-card:hover { box-shadow:0 2px 10px rgba(0,0,0,0.07); }
+    .subject-card-top { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .subject-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+    .subject-name { font-weight:600; font-size:0.95rem; flex:1; cursor:pointer; }
+    .subject-name:hover { color:#2d6a4f; }
+    .subject-status { font-size:0.7rem; padding:3px 9px; border-radius:20px; font-weight:500; cursor:pointer; border:none; flex-shrink:0; }
+    .ss-active { background:#d8f3dc; color:#2d6a4f; }
+    .ss-onhold { background:#fdf0e0; color:#b5651d; }
+    .ss-done   { background:#f0f0ec; color:#666; }
+    .subject-stopped { font-size:0.82rem; color:#555; padding:8px 10px; background:#f9f9f6; border-radius:7px; border-left:3px solid #ddd; margin-bottom:8px; line-height:1.5; }
+    .subject-stopped.filled { border-left-color:#2d6a4f; }
+    .subject-next { font-size:0.82rem; color:#2d6a4f; font-weight:500; padding:6px 10px; background:#f0faf4; border-radius:7px; margin-bottom:8px; }
+    .subject-card-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .days-ago { font-size:0.72rem; padding:2px 8px; border-radius:20px; font-weight:500; flex-shrink:0; }
+    .days-fresh  { background:#d8f3dc; color:#2d6a4f; }
+    .days-warn   { background:#fdf0e0; color:#b5651d; }
+    .days-danger { background:#fce8e4; color:#c0392b; }
+    .days-never  { background:#f0f0ec; color:#aaa; }
+
+    /* ── Revision due badge ── */
+    .remind-due   { background:#fce8e4; color:#c0392b; font-size:0.72rem; padding:2px 9px; border-radius:20px; font-weight:600; }
+    .remind-today { background:#fdf0e0; color:#b5651d; font-size:0.72rem; padding:2px 9px; border-radius:20px; font-weight:600; }
+    .remind-ok    { background:#d8f3dc; color:#2d6a4f; font-size:0.72rem; padding:2px 9px; border-radius:20px; font-weight:500; }
+
+    /* ── Subject detail ── */
+    .ws-card { background:#1a1a1a; color:#fff; border-radius:10px; padding:20px 24px; margin-bottom:16px; }
+    .ws-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:#666; margin-bottom:5px; }
+    .ws-value { font-size:0.975rem; line-height:1.55; }
+    .ws-next { margin-top:12px; padding-top:12px; border-top:1px solid #2a2a2a; font-size:0.875rem; color:#4caf50; }
+    .ws-next strong { display:block; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em; color:#555; margin-bottom:3px; }
+
+    /* ── Topics ── */
+    .topic-item { background:#fff; border:1px solid #e8e8e4; border-radius:8px; padding:12px 16px; margin-bottom:7px; display:flex; align-items:center; gap:10px; }
+    .topic-name { flex:1; font-size:0.9rem; font-weight:500; }
+    .topic-note { font-size:0.76rem; color:#999; font-style:italic; margin-top:2px; }
+    select.status-sel { width:auto; padding:4px 26px 4px 9px; font-size:0.78rem; }
+
+    /* ── Session entries ── */
+    .session-entry {
       background: #fff;
       border: 1px solid #e8e8e4;
-      border-radius: 12px;
-      padding: 18px 20px;
+      border-radius: 10px;
+      padding: 16px 18px;
       margin-bottom: 10px;
-      transition: box-shadow 0.15s;
     }
-    .subject-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
-    .subject-card-top {
+    .session-entry.has-reminder { border-left: 3px solid #b5651d; }
+    .session-entry.reminder-due { border-left: 3px solid #c0392b; }
+
+    .session-entry-header {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       margin-bottom: 10px;
+      flex-wrap: wrap;
     }
-    .subject-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
-    .subject-name { font-weight: 600; font-size: 0.95rem; flex: 1; cursor: pointer; }
-    .subject-name:hover { color: #2d6a4f; }
+    .session-date { font-size:0.72rem; color:#aaa; font-weight:500; }
+    .session-subject-tag { font-size:0.72rem; background:#f0f0ec; color:#555; padding:2px 8px; border-radius:20px; }
 
-    /* Subject status badge */
-    .subject-status {
-      font-size: 0.7rem;
-      padding: 3px 9px;
-      border-radius: 20px;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      flex-shrink: 0;
-    }
-    .ss-active { background: #d8f3dc; color: #2d6a4f; }
-    .ss-onhold { background: #fdf0e0; color: #b5651d; }
-    .ss-done   { background: #f0f0ec; color: #666; }
+    .session-field { margin-bottom:8px; }
+    .session-field-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.07em; color:#aaa; margin-bottom:2px; }
+    .session-field-value { font-size:0.875rem; color:#333; line-height:1.5; }
 
-    /* Where stopped shown on card */
-    .subject-stopped {
-      font-size: 0.82rem;
-      color: #555;
-      padding: 8px 10px;
-      background: #f9f9f6;
-      border-radius: 7px;
-      border-left: 3px solid #ddd;
-      margin-bottom: 8px;
-      line-height: 1.5;
-    }
-    .subject-stopped.filled { border-left-color: #2d6a4f; }
-
-    .subject-next {
-      font-size: 0.82rem;
-      color: #2d6a4f;
-      font-weight: 500;
-      padding: 6px 10px;
-      background: #f0faf4;
-      border-radius: 7px;
-      margin-bottom: 8px;
-    }
-
-    .subject-card-footer {
+    .session-entry-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      margin-top: 10px;
+      margin-top:12px;
+      padding-top:10px;
+      border-top:1px solid #f0f0ec;
+      flex-wrap:wrap;
     }
 
-    /* Last studied badge */
-    .days-ago { font-size: 0.72rem; padding: 2px 8px; border-radius: 20px; font-weight: 500; flex-shrink: 0; }
-    .days-fresh  { background: #d8f3dc; color: #2d6a4f; }
-    .days-warn   { background: #fdf0e0; color: #b5651d; }
-    .days-danger { background: #fce8e4; color: #c0392b; }
-    .days-never  { background: #f0f0ec; color: #aaa; }
-
-    /* ── Subject detail ── */
-    .ws-card {
-      background: #1a1a1a;
-      color: #fff;
+    /* ── Revision banner (top of page) ── */
+    .revision-banner {
+      background: #fdf0e0;
+      border: 1px solid #f5ddb0;
       border-radius: 10px;
-      padding: 20px 24px;
-      margin-bottom: 16px;
-    }
-    .ws-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 5px; }
-    .ws-value { font-size: 0.975rem; line-height: 1.55; }
-    .ws-next { margin-top: 12px; padding-top: 12px; border-top: 1px solid #2a2a2a; font-size: 0.875rem; color: #4caf50; }
-    .ws-next strong { display: block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: #555; margin-bottom: 3px; }
-
-    /* ── Topics ── */
-    .topic-item {
-      background: #fff;
-      border: 1px solid #e8e8e4;
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 7px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
       display: flex;
-      align-items: center;
-      gap: 10px;
+      align-items: flex-start;
+      gap: 12px;
     }
-    .topic-name { flex: 1; font-size: 0.9rem; font-weight: 500; }
-    .topic-note { font-size: 0.76rem; color: #999; font-style: italic; margin-top: 2px; }
-    select.status-sel { width: auto; padding: 4px 26px 4px 9px; font-size: 0.78rem; }
-
-    /* ── History ── */
-    .log-entry { padding: 12px 0; border-bottom: 1px solid #eee; font-size: 0.875rem; }
-    .log-entry:last-child { border-bottom: none; }
-    .log-date { font-size: 0.72rem; color: #aaa; margin-bottom: 4px; }
+    .revision-banner-icon { font-size:1.2rem; flex-shrink:0; }
+    .revision-banner-title { font-weight:600; font-size:0.9rem; color:#b5651d; margin-bottom:4px; }
+    .revision-banner-item { font-size:0.82rem; color:#7a5020; padding:3px 0; }
+    .revision-banner-item a { color:#2d6a4f; cursor:pointer; text-decoration:underline; }
 
     /* ── Modal ── */
-    .overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.45);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .overlay.open { display: flex; }
-    .modal {
-      background: #fff;
-      border-radius: 12px;
-      padding: 28px;
-      width: 100%;
-      max-width: 480px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .modal-wide { max-width: 520px; }
-    .modal h2 { font-size: 1.1rem; margin-bottom: 20px; }
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid #eee;
-    }
+    .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; align-items:center; justify-content:center; padding:20px; }
+    .overlay.open { display:flex; }
+    .modal { background:#fff; border-radius:12px; padding:28px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; }
+    .modal h2 { font-size:1.1rem; margin-bottom:20px; }
+    .modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top:1px solid #eee; }
 
     /* ── Misc ── */
-    .back-btn {
-      background: none; border: none; font-size: 0.85rem; color: #888;
-      cursor: pointer; padding: 0; margin-bottom: 14px;
-      display: flex; align-items: center; gap: 4px;
-    }
-    .back-btn:hover { color: #1a1a1a; }
-    .empty { text-align: center; padding: 48px 20px; color: #aaa; }
-    .empty-icon { font-size: 2.2rem; margin-bottom: 10px; }
-    .empty-text { font-size: 0.875rem; line-height: 1.6; }
-    .row { display: flex; gap: 10px; align-items: flex-start; }
-    .flex1 { flex: 1; }
+    .back-btn { background:none; border:none; font-size:0.85rem; color:#888; cursor:pointer; padding:0; margin-bottom:14px; display:flex; align-items:center; gap:4px; }
+    .back-btn:hover { color:#1a1a1a; }
+    .empty { text-align:center; padding:40px 20px; color:#aaa; }
+    .empty-icon { font-size:2rem; margin-bottom:10px; }
+    .empty-text { font-size:0.875rem; line-height:1.6; }
+    .row { display:flex; gap:10px; align-items:flex-start; }
+    .flex1 { flex:1; }
+    .section-head { font-size:0.85rem; font-weight:600; color:#555; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
 
-    /* ── Toast ── */
-    #toast {
-      position: fixed; bottom: 24px; right: 24px;
-      background: #1a1a1a; color: #fff;
-      padding: 11px 18px; border-radius: 8px;
-      font-size: 0.85rem; opacity: 0;
-      transition: opacity 0.25s; z-index: 999; pointer-events: none;
-    }
-    #toast.show { opacity: 1; }
+    #toast { position:fixed; bottom:24px; right:24px; background:#1a1a1a; color:#fff; padding:11px 18px; border-radius:8px; font-size:0.85rem; opacity:0; transition:opacity 0.25s; z-index:999; pointer-events:none; }
+    #toast.show { opacity:1; }
 
-    @media (max-width: 600px) {
-      .sidebar { width: 180px; }
-      .main { margin-left: 180px; padding: 20px 16px; }
-      .row { flex-direction: column; }
-    }
+    @media(max-width:600px) { .sidebar{width:180px;} .main{margin-left:180px;padding:20px 16px;} .row{flex-direction:column;} }
   </style>
 </head>
 <body>
-
 <div class="shell">
 
-  <!-- ══ SIDEBAR ══ -->
+  <!-- SIDEBAR -->
   <nav class="sidebar">
-    <div class="sidebar-brand">
-      StudyTrail
-      <span id="sb-name">Student</span>
-    </div>
+    <div class="sidebar-brand">StudyTrail<span id="sb-name">Student</span></div>
     <div class="sidebar-section">Subjects</div>
     <div id="sb-subjects"></div>
     <div class="sidebar-section">More</div>
+    <button class="sidebar-btn" onclick="showPage('reminders')">🔔 Reminders<span id="sb-remind-count" class="sidebar-remind" style="display:none"></span></button>
     <button class="sidebar-btn" onclick="showPage('history')">📋 History</button>
     <button class="sidebar-btn" onclick="showPage('settings')">⚙ Settings</button>
   </nav>
 
-  <!-- ══ MAIN ══ -->
   <main class="main">
 
     <!-- SUBJECTS LIST -->
@@ -322,6 +181,7 @@
         <div class="page-title">My Subjects</div>
         <button class="btn btn-green" onclick="openModal('modal-add-subject')">+ Add Subject</button>
       </div>
+      <div id="revision-banner"></div>
       <div id="subject-list"></div>
     </div>
 
@@ -335,29 +195,42 @@
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
           <button class="btn btn-gray btn-sm" onclick="openAddTopic()">+ Topic</button>
-          <button class="btn btn-green" onclick="openCheckin()">Update Progress</button>
+          <button class="btn btn-green" onclick="openCheckin()">+ Log Session</button>
           <button class="btn btn-red btn-sm" onclick="deleteCurrentSubject()">Delete</button>
         </div>
       </div>
 
+      <!-- Where stopped -->
       <div class="ws-card">
         <div class="ws-label">Where I stopped</div>
-        <div class="ws-value" id="ws-stopped" style="color:#555">Nothing recorded yet — click Update Progress</div>
+        <div class="ws-value" id="ws-stopped" style="color:#555">Nothing recorded yet — click Log Session</div>
         <div class="ws-next" id="ws-next" style="display:none">
           <strong>Next up</strong>
           <span id="ws-next-text"></span>
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:0.85rem;font-weight:600;color:#555">Topics <span id="topic-count" style="color:#aaa;font-weight:400"></span></div>
+      <!-- Topics -->
+      <div class="section-head">
+        Topics <span id="topic-count" style="color:#aaa;font-weight:400;font-size:0.8rem"></span>
+        <button class="btn btn-ghost btn-sm" onclick="openAddTopic()">+ Add</button>
       </div>
-      <div id="topic-list"></div>
+      <div id="topic-list" style="margin-bottom:24px"></div>
 
-      <div id="last-notes-wrap" style="display:none;margin-top:16px">
-        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:#aaa;margin-bottom:6px">Last session notes</div>
-        <div id="last-notes-text" style="font-size:0.875rem;color:#555;line-height:1.6;background:#fff;border:1px solid #eee;border-radius:8px;padding:14px 16px"></div>
+      <!-- Session log for this subject -->
+      <div class="section-head">
+        Session Log
+        <span style="font-size:0.78rem;color:#aaa;font-weight:400">All sessions for this subject</span>
       </div>
+      <div id="session-log"></div>
+    </div>
+
+    <!-- REMINDERS PAGE -->
+    <div class="page" id="page-reminders">
+      <div class="page-header">
+        <div class="page-title">🔔 Revision Reminders</div>
+      </div>
+      <div id="reminders-list"></div>
     </div>
 
     <!-- HISTORY -->
@@ -375,15 +248,12 @@
     <div class="page" id="page-settings">
       <div class="page-title" style="margin-bottom:24px">Settings</div>
       <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:20px 24px;margin-bottom:12px">
-        <div class="field">
-          <label>Your name</label>
-          <input id="settings-name" type="text" placeholder="Your name">
-        </div>
+        <div class="field"><label>Your name</label><input id="settings-name" type="text" placeholder="Your name"></div>
         <button class="btn btn-green" onclick="saveName()">Save</button>
       </div>
       <div style="background:#fff;border:1px solid #f5c6bf;border-radius:12px;padding:20px 24px;margin-top:16px">
         <div style="font-weight:600;color:#c0392b;margin-bottom:6px">Danger Zone</div>
-        <p style="font-size:0.85rem;color:#888;margin-bottom:14px">Permanently delete all data and start fresh.</p>
+        <p style="font-size:0.85rem;color:#888;margin-bottom:14px">Permanently delete all data.</p>
         <button class="btn btn-red" onclick="resetAll()">Reset Everything</button>
       </div>
     </div>
@@ -391,16 +261,11 @@
   </main>
 </div>
 
-<!-- ══ MODALS ══ -->
-
-<!-- Add Subject -->
+<!-- MODAL: Add Subject -->
 <div class="overlay" id="modal-add-subject">
   <div class="modal">
     <h2>Add Subject</h2>
-    <div class="field">
-      <label>Subject name</label>
-      <input id="f-subject-name" type="text" placeholder="e.g. Web Development, Java…">
-    </div>
+    <div class="field"><label>Subject name</label><input id="f-subject-name" type="text" placeholder="e.g. Web Development, Java…"></div>
     <div class="field">
       <label>Status</label>
       <select id="f-subject-status">
@@ -416,14 +281,11 @@
   </div>
 </div>
 
-<!-- Add Topic -->
+<!-- MODAL: Add Topic -->
 <div class="overlay" id="modal-add-topic">
   <div class="modal">
     <h2>Add Topic</h2>
-    <div class="field">
-      <label>Topic name</label>
-      <input id="f-topic-name" type="text" placeholder="e.g. CSS Grid, Arrays, Chapter 3…">
-    </div>
+    <div class="field"><label>Topic name</label><input id="f-topic-name" type="text" placeholder="e.g. CSS Grid, Arrays, Chapter 3…"></div>
     <div class="modal-footer">
       <button class="btn btn-gray" onclick="closeModal('modal-add-topic')">Cancel</button>
       <button class="btn btn-green" onclick="addTopic()">Add</button>
@@ -431,30 +293,32 @@
   </div>
 </div>
 
-<!-- Update Progress (full) -->
-<div class="overlay" id="modal-checkin">
-  <div class="modal modal-wide">
-    <h2 id="checkin-title">Update Progress</h2>
+<!-- MODAL: Log / Edit Session -->
+<div class="overlay" id="modal-session">
+  <div class="modal">
+    <h2 id="session-modal-title">Log Session</h2>
+
     <div class="field">
-      <label>Where did you stop?</label>
-      <textarea id="f-stopped" placeholder="e.g. Finished section 4.2, stopped before the exercises…"></textarea>
+      <label>What did you do / where did you stop?</label>
+      <textarea id="s-stopped" placeholder="e.g. Finished reading section 4.2, stopped before exercises…"></textarea>
     </div>
     <div class="field">
       <label>What to do next?</label>
-      <textarea id="f-next" placeholder="e.g. Complete exercises on page 74…"></textarea>
+      <textarea id="s-next" placeholder="e.g. Complete exercises on page 74…"></textarea>
     </div>
     <div class="field">
       <label>Notes / anything confusing? <span style="color:#aaa;font-weight:400">(optional)</span></label>
-      <textarea id="f-notes" placeholder="e.g. Still unclear on how async/await works inside loops…" style="min-height:54px"></textarea>
+      <textarea id="s-notes" placeholder="e.g. Still unclear on how async/await works inside loops…" style="min-height:54px"></textarea>
     </div>
-    <div class="row">
-      <div class="field flex1" style="margin-bottom:0">
+
+    <div class="row" style="margin-bottom:14px">
+      <div class="field flex1" style="margin:0">
         <label>Topic <span style="color:#aaa;font-weight:400">(optional)</span></label>
-        <select id="f-topic-sel"><option value="">— No specific topic —</option></select>
+        <select id="s-topic-sel"><option value="">— No specific topic —</option></select>
       </div>
-      <div class="field" style="margin-bottom:0;width:150px">
+      <div class="field" style="margin:0;width:150px">
         <label>Topic status</label>
-        <select id="f-status">
+        <select id="s-status">
           <option value="">— No change —</option>
           <option value="todo">To Do</option>
           <option value="doing">In Progress</option>
@@ -463,29 +327,39 @@
         </select>
       </div>
     </div>
+
+    <!-- Revision reminder -->
+    <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:14px 16px;">
+      <div style="font-weight:600;font-size:0.85rem;margin-bottom:10px;">🔔 Revision Reminder</div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;font-weight:400">
+        <input type="checkbox" id="s-remind-on" style="width:auto" onchange="toggleReminderDate()">
+        Set a reminder to revise this session
+      </label>
+      <div id="remind-date-row" style="display:none">
+        <label>Remind me on</label>
+        <input type="date" id="s-remind-date">
+        <div style="font-size:0.75rem;color:#aaa;margin-top:5px">Quick set:
+          <button class="btn btn-ghost btn-sm" style="margin-right:4px" onclick="setReminderDays(1)">Tomorrow</button>
+          <button class="btn btn-ghost btn-sm" style="margin-right:4px" onclick="setReminderDays(3)">In 3 days</button>
+          <button class="btn btn-ghost btn-sm" onclick="setReminderDays(7)">In 1 week</button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-footer">
-      <button class="btn btn-gray" onclick="closeModal('modal-checkin')">Cancel</button>
-      <button class="btn btn-green" onclick="saveCheckin()">Save</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-session')">Cancel</button>
+      <button class="btn btn-green" id="session-save-btn" onclick="saveSession()">Save Session</button>
     </div>
   </div>
 </div>
 
-<!-- Quick Update (from subject list) -->
+<!-- MODAL: Quick Update (from list) -->
 <div class="overlay" id="modal-quick">
-  <div class="modal modal-wide">
+  <div class="modal">
     <h2 id="quick-title">Quick Update</h2>
-    <div class="field">
-      <label>Where did you stop?</label>
-      <textarea id="q-stopped" placeholder="e.g. Finished lecture 5, stopped at the quiz…"></textarea>
-    </div>
-    <div class="field">
-      <label>What to do next?</label>
-      <textarea id="q-next" placeholder="e.g. Start lab 3, re-read chapter 2…"></textarea>
-    </div>
-    <div class="field">
-      <label>Notes <span style="color:#aaa;font-weight:400">(optional)</span></label>
-      <textarea id="q-notes" placeholder="Anything to remember…" style="min-height:54px"></textarea>
-    </div>
+    <div class="field"><label>Where did you stop?</label><textarea id="q-stopped" placeholder="e.g. Finished lecture 5…"></textarea></div>
+    <div class="field"><label>What to do next?</label><textarea id="q-next" placeholder="e.g. Start lab 3…"></textarea></div>
+    <div class="field"><label>Notes <span style="color:#aaa;font-weight:400">(optional)</span></label><textarea id="q-notes" style="min-height:54px" placeholder="Anything to remember…"></textarea></div>
     <div class="modal-footer">
       <button class="btn btn-gray" onclick="closeModal('modal-quick')">Cancel</button>
       <button class="btn btn-green" onclick="saveQuick()">Save</button>
@@ -509,18 +383,46 @@ function fmtDate(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleString('en-AU', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
+function fmtDateOnly(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+}
 function daysSince(iso) {
   if (!iso) return null;
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+}
+function todayISO() {
+  return new Date().toISOString().split('T')[0];
 }
 
 // ══ STATE ══
 let currentSubjectId = null;
 let quickSubjectId   = null;
+let editingSessionId = null;  // null = new session, string = editing existing
 
 const COLORS = ['#2d6a4f','#1d5f8a','#7b4dbd','#b5651d','#c0392b','#16a085','#8b4513','#555'];
 const STATUS_META  = { active:{label:'Studying',cls:'ss-active'}, onhold:{label:'On Hold',cls:'ss-onhold'}, done:{label:'Done',cls:'ss-done'} };
 const STATUS_CYCLE = ['active','onhold','done'];
+
+// ══ REMINDERS UTILS ══
+function getDueReminders() {
+  const data = getData();
+  const today = todayISO();
+  const due = [];
+  data.history.forEach(h => {
+    if (h.remindOn && h.remindOn <= today && !h.remindDone) {
+      due.push(h);
+    }
+  });
+  return due;
+}
+
+function updateReminderBadge() {
+  const count = getDueReminders().length;
+  const el = document.getElementById('sb-remind-count');
+  if (count > 0) { el.style.display = 'inline-block'; el.textContent = count; }
+  else           { el.style.display = 'none'; }
+}
 
 // ══ NAV ══
 function showPage(name) {
@@ -528,9 +430,10 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
 
-  if (name === 'history')  { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
-  if (name === 'settings') { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); }
-  if (name === 'subjects') { currentSubjectId = null; renderSubjects(); buildSidebar(); }
+  if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
+  if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
+  if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); }
+  if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); }
 }
 
 // ══ MODALS ══
@@ -555,6 +458,26 @@ function toast(msg) {
 // ══ SUBJECTS LIST ══
 function renderSubjects() {
   const data = getData();
+  const due  = getDueReminders();
+
+  // Revision banner
+  const banner = document.getElementById('revision-banner');
+  if (due.length > 0) {
+    banner.innerHTML = `<div class="revision-banner">
+      <div class="revision-banner-icon">🔔</div>
+      <div>
+        <div class="revision-banner-title">${due.length} session${due.length>1?'s':''} due for revision</div>
+        ${due.slice(0,3).map(h => `<div class="revision-banner-item">
+          <strong>${esc(h.subjectName)}</strong> — ${esc(h.stopped || h.notes || 'Session on ' + fmtDateOnly(h.at))}
+          <a onclick="markReminderDone('${h.id}')"> Mark done</a> ·
+          <a onclick="showPage('reminders')">View all</a>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+
   const list = document.getElementById('subject-list');
   if (data.subjects.length === 0) {
     list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">No subjects yet.<br>Add your first subject to get started.</div></div>`;
@@ -568,27 +491,29 @@ function renderSubjects() {
     const days  = last ? daysSince(last.at) : null;
 
     let daysBadge;
-    if      (days === null)  daysBadge = `<span class="days-ago days-never">Never</span>`;
-    else if (days === 0)     daysBadge = `<span class="days-ago days-fresh">Today</span>`;
-    else if (days <= 2)      daysBadge = `<span class="days-ago days-fresh">${days}d ago</span>`;
-    else if (days <= 5)      daysBadge = `<span class="days-ago days-warn">${days}d ago</span>`;
-    else                     daysBadge = `<span class="days-ago days-danger">${days}d ago ⚠</span>`;
+    if      (days === null) daysBadge = `<span class="days-ago days-never">Never</span>`;
+    else if (days === 0)    daysBadge = `<span class="days-ago days-fresh">Today</span>`;
+    else if (days <= 2)     daysBadge = `<span class="days-ago days-fresh">${days}d ago</span>`;
+    else if (days <= 5)     daysBadge = `<span class="days-ago days-warn">${days}d ago</span>`;
+    else                    daysBadge = `<span class="days-ago days-danger">${days}d ago ⚠</span>`;
 
     const total = s.topics.length;
-    const done  = s.topics.filter(t => t.status === 'done').length;
-    const stuck = s.topics.filter(t => t.status === 'stuck').length;
-    let topicLine = total > 0 ? `${done}/${total} topics done${stuck > 0 ? ` · <span style="color:#c0392b">${stuck} stuck</span>` : ''}` : '';
+    const done  = s.topics.filter(t => t.status==='done').length;
+    const stuck = s.topics.filter(t => t.status==='stuck').length;
+    const topicLine = total > 0 ? `${done}/${total} topics done${stuck>0?` · <span style="color:#c0392b">${stuck} stuck</span>`:''}` : '';
+
+    // Count due reminders for this subject
+    const subjectDue = due.filter(h => h.subjectId === s.id).length;
+    const dueBadge = subjectDue > 0 ? `<span class="remind-due">🔔 ${subjectDue} due</span>` : '';
 
     return `<div class="subject-card">
       <div class="subject-card-top">
         <div class="subject-dot" style="background:${color}"></div>
         <div class="subject-name" onclick="openSubject('${s.id}')">${esc(s.name)}</div>
         <button class="subject-status ${sm.cls}" onclick="cycleStatusFromList('${s.id}')" title="Click to change">${sm.label}</button>
-        ${daysBadge}
+        ${daysBadge} ${dueBadge}
       </div>
-      ${s.stopped
-        ? `<div class="subject-stopped filled">📍 ${esc(s.stopped)}</div>`
-        : `<div class="subject-stopped" style="color:#bbb">No progress recorded yet</div>`}
+      ${s.stopped ? `<div class="subject-stopped filled">📍 ${esc(s.stopped)}</div>` : `<div class="subject-stopped" style="color:#bbb">No progress recorded yet</div>`}
       ${s.nextTodo ? `<div class="subject-next">→ ${esc(s.nextTodo)}</div>` : ''}
       <div class="subject-card-footer">
         <div style="font-size:0.75rem;color:#aaa">${topicLine}</div>
@@ -620,10 +545,8 @@ function cycleStatusFromList(id) {
   const data = getData();
   const s = data.subjects.find(s => s.id === id);
   if (!s) return;
-  s.status = STATUS_CYCLE[(STATUS_CYCLE.indexOf(s.status || 'active') + 1) % STATUS_CYCLE.length];
-  saveData(data);
-  renderSubjects();
-  buildSidebar();
+  s.status = STATUS_CYCLE[(STATUS_CYCLE.indexOf(s.status||'active')+1) % STATUS_CYCLE.length];
+  saveData(data); renderSubjects(); buildSidebar();
 }
 
 function cycleSubjectStatus() {
@@ -631,10 +554,8 @@ function cycleSubjectStatus() {
   const data = getData();
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
-  s.status = STATUS_CYCLE[(STATUS_CYCLE.indexOf(s.status || 'active') + 1) % STATUS_CYCLE.length];
-  saveData(data);
-  renderSubjectDetail();
-  buildSidebar();
+  s.status = STATUS_CYCLE[(STATUS_CYCLE.indexOf(s.status||'active')+1) % STATUS_CYCLE.length];
+  saveData(data); renderSubjectDetail(); buildSidebar();
 }
 
 // ══ SUBJECT DETAIL ══
@@ -650,14 +571,13 @@ function renderSubjectDetail() {
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) { showPage('subjects'); return; }
 
-  const sm = STATUS_META[s.status || 'active'];
+  const sm = STATUS_META[s.status||'active'];
   document.getElementById('detail-title').textContent = s.name;
   const stBtn = document.getElementById('detail-status-btn');
-  stBtn.textContent = sm.label;
-  stBtn.className = `subject-status ${sm.cls}`;
+  stBtn.textContent = sm.label; stBtn.className = `subject-status ${sm.cls}`;
 
   const wsEl = document.getElementById('ws-stopped');
-  wsEl.textContent = s.stopped || 'Nothing recorded yet — click Update Progress';
+  wsEl.textContent = s.stopped || 'Nothing recorded yet — click Log Session';
   wsEl.style.color = s.stopped ? '#fff' : '#555';
 
   const wsNext = document.getElementById('ws-next');
@@ -669,7 +589,7 @@ function renderSubjectDetail() {
   const countEl   = document.getElementById('topic-count');
   if (s.topics.length === 0) {
     countEl.textContent = '';
-    topicList.innerHTML = `<div style="color:#bbb;font-size:0.85rem;padding:10px 0">No topics — optional. Add them to track specific chapters or modules.</div>`;
+    topicList.innerHTML = `<div style="color:#bbb;font-size:0.85rem;padding:6px 0">No topics yet — optional.</div>`;
   } else {
     const done = s.topics.filter(t => t.status==='done').length;
     countEl.textContent = `(${done}/${s.topics.length} done)`;
@@ -689,18 +609,76 @@ function renderSubjectDetail() {
       </div>`).join('');
   }
 
-  // Last notes
-  const lastEntry = data.history.filter(h => h.subjectId === currentSubjectId && h.notes).sort((a,b) => new Date(b.at)-new Date(a.at))[0];
-  const wrap = document.getElementById('last-notes-wrap');
-  if (lastEntry) { wrap.style.display='block'; document.getElementById('last-notes-text').textContent = lastEntry.notes; }
-  else           { wrap.style.display='none'; }
+  // Session log for this subject
+  renderSessionLog(s, data);
+}
+
+function renderSessionLog(s, data) {
+  const entries = data.history
+    .filter(h => h.subjectId === s.id)
+    .sort((a,b) => new Date(b.at) - new Date(a.at));
+
+  const el = document.getElementById('session-log');
+  if (entries.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">No sessions logged yet.<br>Click "Log Session" to record your first one.</div></div>`;
+    return;
+  }
+
+  const today = todayISO();
+
+  el.innerHTML = entries.map(h => {
+    const isOverdue = h.remindOn && h.remindOn <= today && !h.remindDone;
+    const isDueToday = h.remindOn && h.remindOn === today && !h.remindDone;
+    const entryClass = isOverdue ? 'session-entry reminder-due' : (h.remindOn && !h.remindDone ? 'session-entry has-reminder' : 'session-entry');
+
+    let remindBadge = '';
+    if (h.remindOn && !h.remindDone) {
+      if (isOverdue)       remindBadge = `<span class="remind-due">🔔 Overdue — revise now</span>`;
+      else if (isDueToday) remindBadge = `<span class="remind-today">🔔 Due today</span>`;
+      else                 remindBadge = `<span class="remind-ok">🔔 Revise on ${fmtDateOnly(h.remindOn)}</span>`;
+    } else if (h.remindDone) {
+      remindBadge = `<span style="font-size:0.72rem;color:#aaa">✓ Revised</span>`;
+    }
+
+    return `<div class="${entryClass}">
+      <div class="session-entry-header">
+        <span class="session-date">${fmtDate(h.at)}</span>
+        ${remindBadge}
+      </div>
+
+      ${h.stopped ? `<div class="session-field">
+        <div class="session-field-label">📍 Stopped at</div>
+        <div class="session-field-value">${esc(h.stopped)}</div>
+      </div>` : ''}
+
+      ${h.next ? `<div class="session-field">
+        <div class="session-field-label">→ Next up</div>
+        <div class="session-field-value" style="color:#2d6a4f">${esc(h.next)}</div>
+      </div>` : ''}
+
+      ${h.notes ? `<div class="session-field">
+        <div class="session-field-label">📝 Notes</div>
+        <div class="session-field-value" style="color:#666">${esc(h.notes)}</div>
+      </div>` : ''}
+
+      <div class="session-entry-footer">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${h.remindOn && !h.remindDone ? `<button class="btn btn-amber btn-sm" onclick="markReminderDone('${h.id}')">✓ Mark Revised</button>` : ''}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditSession('${h.id}')">Edit</button>
+          <button class="btn btn-red btn-sm" onclick="deleteSession('${h.id}')">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function deleteCurrentSubject() {
   const data = getData();
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
-  if (!confirm(`Delete "${s.name}" and all its history? This cannot be undone.`)) return;
+  if (!confirm(`Delete "${s.name}" and all its sessions? This cannot be undone.`)) return;
   data.subjects = data.subjects.filter(s => s.id !== currentSubjectId);
   data.history  = data.history.filter(h => h.subjectId !== currentSubjectId);
   saveData(data);
@@ -720,10 +698,7 @@ function addTopic() {
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
   s.topics.push({ id:uid(), name, status:'todo', note:'' });
-  saveData(data);
-  closeModal('modal-add-topic');
-  renderSubjectDetail();
-  toast('Topic added');
+  saveData(data); closeModal('modal-add-topic'); renderSubjectDetail(); toast('Topic added');
 }
 
 function changeTopicStatus(topicId, status) {
@@ -732,9 +707,7 @@ function changeTopicStatus(topicId, status) {
   if (!s) return;
   const t = s.topics.find(t => t.id === topicId);
   if (t) t.status = status;
-  saveData(data);
-  renderSubjectDetail();
-  toast('Updated');
+  saveData(data); renderSubjectDetail(); toast('Updated');
 }
 
 function deleteTopic(topicId) {
@@ -743,49 +716,219 @@ function deleteTopic(topicId) {
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
   s.topics = s.topics.filter(t => t.id !== topicId);
-  saveData(data);
-  renderSubjectDetail();
-  toast('Topic deleted');
+  saveData(data); renderSubjectDetail(); toast('Topic deleted');
 }
 
-// ══ UPDATE PROGRESS (full) ══
+// ══ SESSION LOG MODAL ══
+function toggleReminderDate() {
+  const on = document.getElementById('s-remind-on').checked;
+  document.getElementById('remind-date-row').style.display = on ? 'block' : 'none';
+  if (on && !document.getElementById('s-remind-date').value) {
+    setReminderDays(3); // default to 3 days
+  }
+}
+
+function setReminderDays(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  document.getElementById('s-remind-date').value = d.toISOString().split('T')[0];
+}
+
 function openCheckin() {
+  editingSessionId = null;
   const data = getData();
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
-  document.getElementById('checkin-title').textContent = `Update — ${s.name}`;
-  document.getElementById('f-stopped').value = s.stopped || '';
-  document.getElementById('f-next').value    = s.nextTodo || '';
-  document.getElementById('f-notes').value   = '';
-  document.getElementById('f-status').value  = '';
-  const sel = document.getElementById('f-topic-sel');
+
+  document.getElementById('session-modal-title').textContent = `Log Session — ${s.name}`;
+  document.getElementById('session-save-btn').textContent = 'Save Session';
+  document.getElementById('s-stopped').value = s.stopped || '';
+  document.getElementById('s-next').value    = s.nextTodo || '';
+  document.getElementById('s-notes').value   = '';
+  document.getElementById('s-status').value  = '';
+  document.getElementById('s-remind-on').checked = false;
+  document.getElementById('s-remind-date').value = '';
+  document.getElementById('remind-date-row').style.display = 'none';
+
+  const sel = document.getElementById('s-topic-sel');
   sel.innerHTML = '<option value="">— No specific topic —</option>' +
     s.topics.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
-  openModal('modal-checkin');
+
+  openModal('modal-session');
 }
 
-function saveCheckin() {
-  const stopped = document.getElementById('f-stopped').value.trim();
-  const next    = document.getElementById('f-next').value.trim();
-  const notes   = document.getElementById('f-notes').value.trim();
-  const topicId = document.getElementById('f-topic-sel').value;
-  const status  = document.getElementById('f-status').value;
-  if (!stopped && !next) { toast('Fill in at least one field'); return; }
+function openEditSession(sessionId) {
+  editingSessionId = sessionId;
   const data = getData();
-  const s = data.subjects.find(s => s.id === currentSubjectId);
-  if (!s) return;
-  if (stopped) s.stopped = stopped;
-  if (next)    s.nextTodo = next;
-  if (topicId && status) {
-    const t = s.topics.find(t => t.id === topicId);
-    if (t) { t.status = status; if (notes) t.note = notes; }
+  const h = data.history.find(h => h.id === sessionId);
+  if (!h) return;
+
+  const s = data.subjects.find(s => s.id === h.subjectId);
+  document.getElementById('session-modal-title').textContent = 'Edit Session';
+  document.getElementById('session-save-btn').textContent = 'Save Changes';
+  document.getElementById('s-stopped').value = h.stopped || '';
+  document.getElementById('s-next').value    = h.next || '';
+  document.getElementById('s-notes').value   = h.notes || '';
+  document.getElementById('s-status').value  = '';
+
+  const sel = document.getElementById('s-topic-sel');
+  sel.innerHTML = '<option value="">— No specific topic —</option>' +
+    (s ? s.topics.map(t => `<option value="${t.id}" ${t.id===h.topicId?'selected':''}>${esc(t.name)}</option>`).join('') : '');
+
+  const hasReminder = !!h.remindOn && !h.remindDone;
+  document.getElementById('s-remind-on').checked = hasReminder;
+  document.getElementById('s-remind-date').value = h.remindOn || '';
+  document.getElementById('remind-date-row').style.display = hasReminder ? 'block' : 'none';
+
+  openModal('modal-session');
+}
+
+function saveSession() {
+  const stopped = document.getElementById('s-stopped').value.trim();
+  const next    = document.getElementById('s-next').value.trim();
+  const notes   = document.getElementById('s-notes').value.trim();
+  const topicId = document.getElementById('s-topic-sel').value;
+  const status  = document.getElementById('s-status').value;
+  const remindOn = document.getElementById('s-remind-on').checked ? document.getElementById('s-remind-date').value : '';
+
+  if (!stopped && !next && !notes) { toast('Fill in at least one field'); return; }
+
+  const data = getData();
+
+  if (editingSessionId) {
+    // EDIT existing
+    const h = data.history.find(h => h.id === editingSessionId);
+    if (!h) return;
+    h.stopped  = stopped;
+    h.next     = next;
+    h.notes    = notes;
+    h.topicId  = topicId || null;
+    h.remindOn = remindOn || null;
+    if (remindOn) h.remindDone = false; // re-activate if date changed
+    saveData(data);
+    closeModal('modal-session');
+    renderSubjectDetail();
+    updateReminderBadge();
+    toast('Session updated ✓');
+  } else {
+    // NEW session
+    const s = data.subjects.find(s => s.id === currentSubjectId);
+    if (!s) return;
+    if (stopped) s.stopped = stopped;
+    if (next)    s.nextTodo = next;
+    if (topicId && status) {
+      const t = s.topics.find(t => t.id === topicId);
+      if (t) { t.status = status; if (notes) t.note = notes; }
+    }
+    data.history.unshift({
+      id: uid(),
+      subjectId: currentSubjectId,
+      subjectName: s.name,
+      topicId: topicId || null,
+      stopped, next, notes,
+      remindOn: remindOn || null,
+      remindDone: false,
+      at: ts()
+    });
+    if (data.history.length > 300) data.history.length = 300;
+    saveData(data);
+    closeModal('modal-session');
+    renderSubjectDetail();
+    updateReminderBadge();
+    toast('Session saved ✓');
   }
-  data.history.unshift({ id:uid(), subjectId:currentSubjectId, subjectName:s.name, topicId:topicId||null, stopped, next, notes, at:ts() });
-  if (data.history.length > 200) data.history.length = 200;
+}
+
+function deleteSession(sessionId) {
+  if (!confirm('Delete this session entry?')) return;
+  const data = getData();
+  data.history = data.history.filter(h => h.id !== sessionId);
   saveData(data);
-  closeModal('modal-checkin');
   renderSubjectDetail();
-  toast('Saved ✓');
+  updateReminderBadge();
+  toast('Session deleted');
+}
+
+// ══ REMINDERS ══
+function markReminderDone(sessionId) {
+  const data = getData();
+  const h = data.history.find(h => h.id === sessionId);
+  if (!h) return;
+  h.remindDone = true;
+  saveData(data);
+  renderSubjects();
+  updateReminderBadge();
+  if (document.getElementById('page-reminders').classList.contains('active')) renderReminders();
+  if (document.getElementById('page-subject').classList.contains('active')) renderSubjectDetail();
+  toast('Marked as revised ✓');
+}
+
+function renderReminders() {
+  const data  = getData();
+  const today = todayISO();
+  const list  = document.getElementById('reminders-list');
+
+  const overdue  = data.history.filter(h => h.remindOn && h.remindOn < today && !h.remindDone).sort((a,b)=>a.remindOn.localeCompare(b.remindOn));
+  const dueToday = data.history.filter(h => h.remindOn && h.remindOn === today && !h.remindDone);
+  const upcoming = data.history.filter(h => h.remindOn && h.remindOn > today && !h.remindDone).sort((a,b)=>a.remindOn.localeCompare(b.remindOn));
+  const done     = data.history.filter(h => h.remindDone).sort((a,b)=>new Date(b.at)-new Date(a.at)).slice(0,10);
+
+  if (overdue.length === 0 && dueToday.length === 0 && upcoming.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-text">No reminders set.<br>When you log a session, tick "Set a reminder" to get reminded to revise it later.</div></div>`;
+    if (done.length > 0) list.innerHTML += renderDoneReminders(done);
+    return;
+  }
+
+  const renderEntry = (h, badge) => `
+    <div class="session-entry ${h.remindOn <= today ? 'reminder-due' : 'has-reminder'}" style="margin-bottom:10px">
+      <div class="session-entry-header">
+        <strong>${esc(h.subjectName)}</strong>
+        ${badge}
+        <span class="session-date">${fmtDate(h.at)}</span>
+      </div>
+      ${h.stopped ? `<div class="session-field"><div class="session-field-label">Stopped at</div><div class="session-field-value">${esc(h.stopped)}</div></div>` : ''}
+      ${h.notes   ? `<div class="session-field"><div class="session-field-label">Notes</div><div class="session-field-value" style="color:#666">${esc(h.notes)}</div></div>` : ''}
+      <div class="session-entry-footer">
+        <div></div>
+        <button class="btn btn-amber btn-sm" onclick="markReminderDone('${h.id}')">✓ Mark Revised</button>
+      </div>
+    </div>`;
+
+  let html = '';
+
+  if (overdue.length > 0) {
+    html += `<div style="font-weight:600;color:#c0392b;margin-bottom:10px">⚠ Overdue (${overdue.length})</div>`;
+    html += overdue.map(h => renderEntry(h, `<span class="remind-due">Overdue since ${fmtDateOnly(h.remindOn)}</span>`)).join('');
+    html += '<div style="margin-bottom:20px"></div>';
+  }
+
+  if (dueToday.length > 0) {
+    html += `<div style="font-weight:600;color:#b5651d;margin-bottom:10px">Today (${dueToday.length})</div>`;
+    html += dueToday.map(h => renderEntry(h, `<span class="remind-today">Due today</span>`)).join('');
+    html += '<div style="margin-bottom:20px"></div>';
+  }
+
+  if (upcoming.length > 0) {
+    html += `<div style="font-weight:600;color:#555;margin-bottom:10px">Upcoming</div>`;
+    html += upcoming.map(h => renderEntry(h, `<span class="remind-ok">🔔 ${fmtDateOnly(h.remindOn)}</span>`)).join('');
+    html += '<div style="margin-bottom:20px"></div>';
+  }
+
+  if (done.length > 0) html += renderDoneReminders(done);
+
+  list.innerHTML = html;
+}
+
+function renderDoneReminders(done) {
+  return `<div style="font-weight:600;color:#aaa;margin-bottom:10px;margin-top:8px">✓ Recently revised</div>` +
+    done.map(h => `<div class="session-entry" style="opacity:0.55;margin-bottom:8px">
+      <div class="session-entry-header">
+        <strong>${esc(h.subjectName)}</strong>
+        <span style="font-size:0.72rem;color:#aaa">✓ Revised</span>
+        <span class="session-date">${fmtDate(h.at)}</span>
+      </div>
+      ${h.stopped ? `<div style="font-size:0.85rem;color:#888">${esc(h.stopped)}</div>` : ''}
+    </div>`).join('');
 }
 
 // ══ QUICK UPDATE ══
@@ -811,11 +954,12 @@ function saveQuick() {
   if (!s) return;
   if (stopped) s.stopped = stopped;
   if (next)    s.nextTodo = next;
-  data.history.unshift({ id:uid(), subjectId:quickSubjectId, subjectName:s.name, topicId:null, stopped, next, notes, at:ts() });
-  if (data.history.length > 200) data.history.length = 200;
+  data.history.unshift({ id:uid(), subjectId:quickSubjectId, subjectName:s.name, topicId:null, stopped, next, notes, remindOn:null, remindDone:false, at:ts() });
+  if (data.history.length > 300) data.history.length = 300;
   saveData(data);
   closeModal('modal-quick');
   renderSubjects();
+  updateReminderBadge();
   toast('Saved ✓');
 }
 
@@ -831,7 +975,7 @@ function renderHistory() {
   const list  = document.getElementById('history-list');
 
   if (entries.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No history yet.<br>Update your progress after each session.</div></div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No history yet.</div></div>`;
     return;
   }
 
@@ -840,6 +984,7 @@ function renderHistory() {
     if (h.stopped) parts.push(`<div>📍 <strong>Stopped:</strong> ${esc(h.stopped)}</div>`);
     if (h.next)    parts.push(`<div style="color:#2d6a4f">→ <strong>Next:</strong> ${esc(h.next)}</div>`);
     if (h.notes)   parts.push(`<div style="color:#888">📝 ${esc(h.notes)}</div>`);
+    if (h.remindOn && !h.remindDone) parts.push(`<div style="color:#b5651d">🔔 Remind: ${fmtDateOnly(h.remindOn)}</div>`);
     return `<div class="log-entry">
       <div class="log-date">${fmtDate(h.at)} · <strong style="color:#333">${esc(h.subjectName)}</strong></div>
       <div style="display:flex;flex-direction:column;gap:4px;margin-top:5px;line-height:1.5">${parts.join('')}</div>
@@ -869,6 +1014,7 @@ function resetAll() {
 // ══ BOOT ══
 buildSidebar();
 renderSubjects();
+updateReminderBadge();
 </script>
 </body>
 </html>
