@@ -14,9 +14,9 @@
       min-height: 100vh;
     }
 
-    /* ── Layout ── */
     .shell { display: flex; min-height: 100vh; }
 
+    /* ── Sidebar ── */
     .sidebar {
       width: 220px;
       background: #1a1a1a;
@@ -29,67 +29,50 @@
       height: 100vh;
       overflow-y: auto;
     }
-
     .sidebar-brand {
       padding: 24px 20px 16px;
       font-size: 1.2rem;
       font-weight: 700;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid #2a2a2a;
     }
-
     .sidebar-brand span {
       display: block;
       font-size: 0.75rem;
       font-weight: 400;
-      color: #888;
+      color: #666;
       margin-top: 2px;
     }
-
     .sidebar-section {
-      padding: 16px 20px 8px;
-      font-size: 0.65rem;
+      padding: 16px 20px 6px;
+      font-size: 0.62rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #555;
+      color: #444;
     }
-
     .sidebar-btn {
       display: block;
       width: 100%;
       text-align: left;
-      padding: 9px 20px;
+      padding: 8px 20px;
       background: none;
       border: none;
-      color: #aaa;
-      font-size: 0.875rem;
+      color: #888;
+      font-size: 0.85rem;
       cursor: pointer;
       border-left: 2px solid transparent;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .sidebar-btn:hover { color: #fff; background: #222; }
-    .sidebar-btn.active { color: #fff; border-left-color: #4caf50; background: #1f2e1f; }
+    .sidebar-btn.active { color: #fff; border-left-color: #4caf50; background: #1a2a1a; }
 
+    /* ── Main ── */
     .main {
       margin-left: 220px;
       flex: 1;
       padding: 32px 36px;
       max-width: 860px;
-    }
-
-    /* ── Cards ── */
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      padding: 20px 24px;
-      border: 1px solid #e8e8e4;
-      margin-bottom: 12px;
-    }
-
-    .card-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #999;
-      margin-bottom: 6px;
     }
 
     /* ── Page header ── */
@@ -98,31 +81,31 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 24px;
+      gap: 12px;
     }
-
-    .page-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
+    .page-title { font-size: 1.5rem; font-weight: 700; }
 
     /* ── Buttons ── */
     .btn {
-      padding: 9px 18px;
+      padding: 8px 16px;
       border-radius: 7px;
       border: none;
-      font-size: 0.875rem;
+      font-size: 0.85rem;
       font-weight: 500;
       cursor: pointer;
+      white-space: nowrap;
     }
     .btn-green { background: #2d6a4f; color: #fff; }
     .btn-green:hover { background: #245a42; }
-    .btn-gray { background: #f0f0ec; color: #333; border: 1px solid #e0e0da; }
-    .btn-gray:hover { background: #e4e4e0; }
-    .btn-red { background: #fce8e4; color: #c0392b; border: 1px solid #f5c6bf; }
-    .btn-red:hover { background: #f8d5d0; }
-    .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+    .btn-gray  { background: #f0f0ec; color: #333; border: 1px solid #e0e0da; }
+    .btn-gray:hover  { background: #e4e4e0; }
+    .btn-red   { background: #fce8e4; color: #c0392b; border: 1px solid #f5c6bf; }
+    .btn-red:hover   { background: #f8d5d0; }
+    .btn-ghost { background: none; color: #888; border: 1px solid #ddd; }
+    .btn-ghost:hover { background: #f0f0ec; color: #333; }
+    .btn-sm    { padding: 5px 10px; font-size: 0.78rem; }
 
-    /* ── Form fields ── */
+    /* ── Forms ── */
     input, textarea, select {
       width: 100%;
       padding: 9px 12px;
@@ -138,132 +121,131 @@
       border-color: #2d6a4f;
       background: #fff;
     }
-    textarea { resize: vertical; min-height: 70px; }
-    label { display: block; font-size: 0.82rem; font-weight: 500; margin-bottom: 5px; color: #444; }
+    textarea { resize: vertical; min-height: 68px; }
+    label { display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 5px; color: #555; }
     .field { margin-bottom: 14px; }
 
     /* ── Pages ── */
     .page { display: none; }
     .page.active { display: block; }
 
-    /* ── Subject list ── */
-    .subject-item {
+    /* ── Subject cards ── */
+    .subject-card {
       background: #fff;
       border: 1px solid #e8e8e4;
-      border-radius: 10px;
-      padding: 16px 20px;
+      border-radius: 12px;
+      padding: 18px 20px;
       margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      cursor: pointer;
       transition: box-shadow 0.15s;
     }
-    .subject-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .subject-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+    .subject-card-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .subject-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .subject-name { font-weight: 600; font-size: 0.95rem; flex: 1; cursor: pointer; }
+    .subject-name:hover { color: #2d6a4f; }
 
-    .subject-dot {
-      width: 12px; height: 12px;
-      border-radius: 50%;
+    /* Subject status badge */
+    .subject-status {
+      font-size: 0.7rem;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
       flex-shrink: 0;
     }
+    .ss-active { background: #d8f3dc; color: #2d6a4f; }
+    .ss-onhold { background: #fdf0e0; color: #b5651d; }
+    .ss-done   { background: #f0f0ec; color: #666; }
 
-    .subject-name { font-weight: 600; font-size: 0.95rem; flex: 1; }
+    /* Where stopped shown on card */
+    .subject-stopped {
+      font-size: 0.82rem;
+      color: #555;
+      padding: 8px 10px;
+      background: #f9f9f6;
+      border-radius: 7px;
+      border-left: 3px solid #ddd;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .subject-stopped.filled { border-left-color: #2d6a4f; }
 
-    .subject-meta { font-size: 0.78rem; color: #888; }
+    .subject-next {
+      font-size: 0.82rem;
+      color: #2d6a4f;
+      font-weight: 500;
+      padding: 6px 10px;
+      background: #f0faf4;
+      border-radius: 7px;
+      margin-bottom: 8px;
+    }
 
-    /* ── Topic detail ── */
-    .where-stopped {
+    .subject-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    /* Last studied badge */
+    .days-ago { font-size: 0.72rem; padding: 2px 8px; border-radius: 20px; font-weight: 500; flex-shrink: 0; }
+    .days-fresh  { background: #d8f3dc; color: #2d6a4f; }
+    .days-warn   { background: #fdf0e0; color: #b5651d; }
+    .days-danger { background: #fce8e4; color: #c0392b; }
+    .days-never  { background: #f0f0ec; color: #aaa; }
+
+    /* ── Subject detail ── */
+    .ws-card {
       background: #1a1a1a;
       color: #fff;
       border-radius: 10px;
       padding: 20px 24px;
       margin-bottom: 16px;
     }
+    .ws-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 5px; }
+    .ws-value { font-size: 0.975rem; line-height: 1.55; }
+    .ws-next { margin-top: 12px; padding-top: 12px; border-top: 1px solid #2a2a2a; font-size: 0.875rem; color: #4caf50; }
+    .ws-next strong { display: block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: #555; margin-bottom: 3px; }
 
-    .where-stopped .label {
-      font-size: 0.68rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #888;
-      margin-bottom: 6px;
-    }
-
-    .where-stopped .value {
-      font-size: 1rem;
-      line-height: 1.5;
-    }
-
-    .where-stopped .next {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid #333;
-      font-size: 0.875rem;
-      color: #4caf50;
-    }
-
-    .where-stopped .next strong {
-      display: block;
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #666;
-      margin-bottom: 3px;
-    }
-
-    /* ── Topic list items ── */
+    /* ── Topics ── */
     .topic-item {
       background: #fff;
       border: 1px solid #e8e8e4;
       border-radius: 8px;
-      padding: 14px 18px;
-      margin-bottom: 8px;
+      padding: 12px 16px;
+      margin-bottom: 7px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
-
     .topic-name { flex: 1; font-size: 0.9rem; font-weight: 500; }
+    .topic-note { font-size: 0.76rem; color: #999; font-style: italic; margin-top: 2px; }
+    select.status-sel { width: auto; padding: 4px 26px 4px 9px; font-size: 0.78rem; }
 
-    .topic-status {
-      font-size: 0.72rem;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-weight: 500;
-    }
-    .s-todo     { background: #f0f0ec; color: #666; }
-    .s-doing    { background: #e4f0f8; color: #1d5f8a; }
-    .s-done     { background: #d8f3dc; color: #2d6a4f; }
-    .s-stuck    { background: #fce8e4; color: #c0392b; }
-
-    .topic-note {
-      font-size: 0.78rem;
-      color: #999;
-      font-style: italic;
-      margin-top: 3px;
-    }
-
-    /* ── History log ── */
-    .log-entry {
-      padding: 12px 0;
-      border-bottom: 1px solid #eee;
-      font-size: 0.875rem;
-    }
+    /* ── History ── */
+    .log-entry { padding: 12px 0; border-bottom: 1px solid #eee; font-size: 0.875rem; }
     .log-entry:last-child { border-bottom: none; }
-    .log-date { font-size: 0.72rem; color: #aaa; margin-bottom: 3px; }
+    .log-date { font-size: 0.72rem; color: #aaa; margin-bottom: 4px; }
 
     /* ── Modal ── */
     .overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.4);
+      background: rgba(0,0,0,0.45);
       z-index: 200;
       align-items: center;
       justify-content: center;
       padding: 20px;
     }
     .overlay.open { display: flex; }
-
     .modal {
       background: #fff;
       border-radius: 12px;
@@ -273,9 +255,8 @@
       max-height: 90vh;
       overflow-y: auto;
     }
-
+    .modal-wide { max-width: 520px; }
     .modal h2 { font-size: 1.1rem; margin-bottom: 20px; }
-
     .modal-footer {
       display: flex;
       justify-content: flex-end;
@@ -285,59 +266,33 @@
       border-top: 1px solid #eee;
     }
 
-    /* ── Empty state ── */
-    .empty {
-      text-align: center;
-      padding: 48px 20px;
-      color: #aaa;
+    /* ── Misc ── */
+    .back-btn {
+      background: none; border: none; font-size: 0.85rem; color: #888;
+      cursor: pointer; padding: 0; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 4px;
     }
-    .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
-    .empty-text { font-size: 0.9rem; }
+    .back-btn:hover { color: #1a1a1a; }
+    .empty { text-align: center; padding: 48px 20px; color: #aaa; }
+    .empty-icon { font-size: 2.2rem; margin-bottom: 10px; }
+    .empty-text { font-size: 0.875rem; line-height: 1.6; }
+    .row { display: flex; gap: 10px; align-items: flex-start; }
+    .flex1 { flex: 1; }
 
     /* ── Toast ── */
     #toast {
-      position: fixed;
-      bottom: 24px; right: 24px;
-      background: #1a1a1a;
-      color: #fff;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 999;
-      pointer-events: none;
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1a1a1a; color: #fff;
+      padding: 11px 18px; border-radius: 8px;
+      font-size: 0.85rem; opacity: 0;
+      transition: opacity 0.25s; z-index: 999; pointer-events: none;
     }
     #toast.show { opacity: 1; }
-
-    /* ── Back button ── */
-    .back-btn {
-      background: none;
-      border: none;
-      font-size: 0.875rem;
-      color: #888;
-      cursor: pointer;
-      padding: 0;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .back-btn:hover { color: #1a1a1a; }
-
-    /* ── Status select ── */
-    select.status-sel {
-      width: auto;
-      padding: 4px 28px 4px 10px;
-      font-size: 0.78rem;
-    }
-
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
     @media (max-width: 600px) {
       .sidebar { width: 180px; }
       .main { margin-left: 180px; padding: 20px 16px; }
-      .grid2 { grid-template-columns: 1fr; }
+      .row { flex-direction: column; }
     }
   </style>
 </head>
@@ -345,7 +300,7 @@
 
 <div class="shell">
 
-  <!-- Sidebar -->
+  <!-- ══ SIDEBAR ══ -->
   <nav class="sidebar">
     <div class="sidebar-brand">
       StudyTrail
@@ -358,10 +313,10 @@
     <button class="sidebar-btn" onclick="showPage('settings')">⚙ Settings</button>
   </nav>
 
-  <!-- Main -->
+  <!-- ══ MAIN ══ -->
   <main class="main">
 
-    <!-- ── SUBJECTS PAGE ── -->
+    <!-- SUBJECTS LIST -->
     <div class="page active" id="page-subjects">
       <div class="page-header">
         <div class="page-title">My Subjects</div>
@@ -370,61 +325,65 @@
       <div id="subject-list"></div>
     </div>
 
-    <!-- ── SUBJECT DETAIL PAGE ── -->
+    <!-- SUBJECT DETAIL -->
     <div class="page" id="page-subject">
       <button class="back-btn" onclick="showPage('subjects')">← Back</button>
       <div class="page-header">
-        <div class="page-title" id="detail-title">Subject</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-gray" onclick="openAddTopic()">+ Topic</button>
+        <div style="display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap">
+          <div class="page-title" id="detail-title"></div>
+          <button id="detail-status-btn" class="subject-status" onclick="cycleSubjectStatus()"></button>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
+          <button class="btn btn-gray btn-sm" onclick="openAddTopic()">+ Topic</button>
           <button class="btn btn-green" onclick="openCheckin()">Update Progress</button>
+          <button class="btn btn-red btn-sm" onclick="deleteCurrentSubject()">Delete</button>
         </div>
       </div>
 
-      <!-- Where I stopped -->
-      <div class="where-stopped" id="where-stopped-card">
-        <div class="label">Where I stopped</div>
-        <div class="value" id="ws-stopped">Nothing recorded yet</div>
-        <div class="next" id="ws-next" style="display:none">
+      <div class="ws-card">
+        <div class="ws-label">Where I stopped</div>
+        <div class="ws-value" id="ws-stopped" style="color:#555">Nothing recorded yet — click Update Progress</div>
+        <div class="ws-next" id="ws-next" style="display:none">
           <strong>Next up</strong>
           <span id="ws-next-text"></span>
         </div>
       </div>
 
-      <!-- Topics -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-weight:600;font-size:0.9rem">Topics</div>
+        <div style="font-size:0.85rem;font-weight:600;color:#555">Topics <span id="topic-count" style="color:#aaa;font-weight:400"></span></div>
       </div>
       <div id="topic-list"></div>
 
-      <!-- Last session note -->
-      <div id="last-session-note" style="display:none;margin-top:16px">
-        <div class="card">
-          <div class="card-title">Last session notes</div>
-          <div id="lsn-text" style="font-size:0.875rem;color:#555;line-height:1.6"></div>
-        </div>
+      <div id="last-notes-wrap" style="display:none;margin-top:16px">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:#aaa;margin-bottom:6px">Last session notes</div>
+        <div id="last-notes-text" style="font-size:0.875rem;color:#555;line-height:1.6;background:#fff;border:1px solid #eee;border-radius:8px;padding:14px 16px"></div>
       </div>
     </div>
 
-    <!-- ── HISTORY PAGE ── -->
+    <!-- HISTORY -->
     <div class="page" id="page-history">
-      <div class="page-title" style="margin-bottom:20px">History</div>
+      <div class="page-header">
+        <div class="page-title">History</div>
+        <select id="history-filter" style="width:auto;padding:6px 28px 6px 10px;font-size:0.82rem" onchange="renderHistory()">
+          <option value="">All subjects</option>
+        </select>
+      </div>
       <div id="history-list"></div>
     </div>
 
-    <!-- ── SETTINGS PAGE ── -->
+    <!-- SETTINGS -->
     <div class="page" id="page-settings">
-      <div class="page-title" style="margin-bottom:20px">Settings</div>
-      <div class="card">
+      <div class="page-title" style="margin-bottom:24px">Settings</div>
+      <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:20px 24px;margin-bottom:12px">
         <div class="field">
           <label>Your name</label>
           <input id="settings-name" type="text" placeholder="Your name">
         </div>
         <button class="btn btn-green" onclick="saveName()">Save</button>
       </div>
-      <div class="card" style="margin-top:12px">
-        <div style="font-weight:600;margin-bottom:8px;color:#c0392b">Danger Zone</div>
-        <p style="font-size:0.85rem;color:#888;margin-bottom:12px">Delete all data and start fresh.</p>
+      <div style="background:#fff;border:1px solid #f5c6bf;border-radius:12px;padding:20px 24px;margin-top:16px">
+        <div style="font-weight:600;color:#c0392b;margin-bottom:6px">Danger Zone</div>
+        <p style="font-size:0.85rem;color:#888;margin-bottom:14px">Permanently delete all data and start fresh.</p>
         <button class="btn btn-red" onclick="resetAll()">Reset Everything</button>
       </div>
     </div>
@@ -432,13 +391,23 @@
   </main>
 </div>
 
-<!-- ── MODAL: Add Subject ── -->
+<!-- ══ MODALS ══ -->
+
+<!-- Add Subject -->
 <div class="overlay" id="modal-add-subject">
   <div class="modal">
     <h2>Add Subject</h2>
     <div class="field">
       <label>Subject name</label>
       <input id="f-subject-name" type="text" placeholder="e.g. Web Development, Java…">
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="f-subject-status">
+        <option value="active">Currently Studying</option>
+        <option value="onhold">On Hold</option>
+        <option value="done">Done</option>
+      </select>
     </div>
     <div class="modal-footer">
       <button class="btn btn-gray" onclick="closeModal('modal-add-subject')">Cancel</button>
@@ -447,7 +416,7 @@
   </div>
 </div>
 
-<!-- ── MODAL: Add Topic ── -->
+<!-- Add Topic -->
 <div class="overlay" id="modal-add-topic">
   <div class="modal">
     <h2>Add Topic</h2>
@@ -462,44 +431,38 @@
   </div>
 </div>
 
-<!-- ── MODAL: Update Progress (Check-in) ── -->
+<!-- Update Progress (full) -->
 <div class="overlay" id="modal-checkin">
-  <div class="modal">
-    <h2>Update Progress</h2>
-
+  <div class="modal modal-wide">
+    <h2 id="checkin-title">Update Progress</h2>
     <div class="field">
-      <label>What did you just work on / where did you stop?</label>
-      <textarea id="f-stopped" placeholder="e.g. Finished reading section 4.2, stopped before the exercises…"></textarea>
+      <label>Where did you stop?</label>
+      <textarea id="f-stopped" placeholder="e.g. Finished section 4.2, stopped before the exercises…"></textarea>
     </div>
-
     <div class="field">
-      <label>What do you need to do next?</label>
-      <textarea id="f-next" placeholder="e.g. Complete exercises on page 74, review CSS specificity…"></textarea>
+      <label>What to do next?</label>
+      <textarea id="f-next" placeholder="e.g. Complete exercises on page 74…"></textarea>
     </div>
-
     <div class="field">
-      <label>Any notes or things that confused you? <span style="color:#aaa;font-weight:400">(optional)</span></label>
-      <textarea id="f-notes" placeholder="e.g. Still unclear on how async/await works inside loops…"></textarea>
+      <label>Notes / anything confusing? <span style="color:#aaa;font-weight:400">(optional)</span></label>
+      <textarea id="f-notes" placeholder="e.g. Still unclear on how async/await works inside loops…" style="min-height:54px"></textarea>
     </div>
-
-    <div class="field">
-      <label>Topic <span style="color:#aaa;font-weight:400">(optional)</span></label>
-      <select id="f-topic-sel">
-        <option value="">— General / no specific topic —</option>
-      </select>
+    <div class="row">
+      <div class="field flex1" style="margin-bottom:0">
+        <label>Topic <span style="color:#aaa;font-weight:400">(optional)</span></label>
+        <select id="f-topic-sel"><option value="">— No specific topic —</option></select>
+      </div>
+      <div class="field" style="margin-bottom:0;width:150px">
+        <label>Topic status</label>
+        <select id="f-status">
+          <option value="">— No change —</option>
+          <option value="todo">To Do</option>
+          <option value="doing">In Progress</option>
+          <option value="done">Done</option>
+          <option value="stuck">Stuck</option>
+        </select>
+      </div>
     </div>
-
-    <div class="field">
-      <label>Topic status</label>
-      <select id="f-status">
-        <option value="">— Don't change —</option>
-        <option value="todo">To Do</option>
-        <option value="doing">In Progress</option>
-        <option value="done">Done</option>
-        <option value="stuck">Stuck</option>
-      </select>
-    </div>
-
     <div class="modal-footer">
       <button class="btn btn-gray" onclick="closeModal('modal-checkin')">Cancel</button>
       <button class="btn btn-green" onclick="saveCheckin()">Save</button>
@@ -507,148 +470,179 @@
   </div>
 </div>
 
+<!-- Quick Update (from subject list) -->
+<div class="overlay" id="modal-quick">
+  <div class="modal modal-wide">
+    <h2 id="quick-title">Quick Update</h2>
+    <div class="field">
+      <label>Where did you stop?</label>
+      <textarea id="q-stopped" placeholder="e.g. Finished lecture 5, stopped at the quiz…"></textarea>
+    </div>
+    <div class="field">
+      <label>What to do next?</label>
+      <textarea id="q-next" placeholder="e.g. Start lab 3, re-read chapter 2…"></textarea>
+    </div>
+    <div class="field">
+      <label>Notes <span style="color:#aaa;font-weight:400">(optional)</span></label>
+      <textarea id="q-notes" placeholder="Anything to remember…" style="min-height:54px"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="closeModal('modal-quick')">Cancel</button>
+      <button class="btn btn-green" onclick="saveQuick()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════
-//  DATA
-// ═══════════════════════════════════════════════
-function load(key, def) {
-  try { return JSON.parse(localStorage.getItem(key)) || def; } catch { return def; }
-}
-function save(key, val) {
-  localStorage.setItem(key, JSON.stringify(val));
-}
-
-function getData() { return load('st2_data', { subjects: [], history: [] }); }
-function saveData(d) { save('st2_data', d); }
-function getName() { return load('st2_name', ''); }
-function saveName2(n) { save('st2_name', n); }
-
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-}
-
-function ts() { return new Date().toISOString(); }
+// ══ DATA ══
+function getData()    { try { return JSON.parse(localStorage.getItem('st2_data')) || {subjects:[],history:[]}; } catch { return {subjects:[],history:[]}; } }
+function saveData(d)  { localStorage.setItem('st2_data', JSON.stringify(d)); }
+function getName()    { return localStorage.getItem('st2_name') || ''; }
+function saveName2(n) { localStorage.setItem('st2_name', n); }
+function uid()        { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function ts()         { return new Date().toISOString(); }
+function esc(s)       { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
 
 function fmtDate(iso) {
   if (!iso) return '';
-  return new Date(iso).toLocaleString('en-AU', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  });
+  return new Date(iso).toLocaleString('en-AU', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function daysSince(iso) {
+  if (!iso) return null;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
 }
 
-// ═══════════════════════════════════════════════
-//  UI STATE
-// ═══════════════════════════════════════════════
+// ══ STATE ══
 let currentSubjectId = null;
+let quickSubjectId   = null;
 
+const COLORS = ['#2d6a4f','#1d5f8a','#7b4dbd','#b5651d','#c0392b','#16a085','#8b4513','#555'];
+const STATUS_META  = { active:{label:'Studying',cls:'ss-active'}, onhold:{label:'On Hold',cls:'ss-onhold'}, done:{label:'Done',cls:'ss-done'} };
+const STATUS_CYCLE = ['active','onhold','done'];
+
+// ══ NAV ══
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-
   document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
-  if (name === 'history') document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active');
-  if (name === 'settings') document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active');
 
-  if (name === 'subjects') renderSubjects();
-  if (name === 'history') renderHistory();
-  if (name === 'settings') {
-    document.getElementById('settings-name').value = getName();
-  }
+  if (name === 'history')  { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
+  if (name === 'settings') { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); }
+  if (name === 'subjects') { currentSubjectId = null; renderSubjects(); buildSidebar(); }
 }
 
+// ══ MODALS ══
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('click', e => { if (e.target.classList.contains('overlay')) e.target.classList.remove('open'); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('modal-add-subject').classList.contains('open') && document.activeElement.id === 'f-subject-name') addSubject();
+  if (document.getElementById('modal-add-topic').classList.contains('open')   && document.activeElement.id === 'f-topic-name')   addTopic();
+});
+
+// ══ TOAST ══
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2400);
 }
 
-// ═══════════════════════════════════════════════
-//  MODALS
-// ═══════════════════════════════════════════════
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-document.addEventListener('click', e => {
-  if (e.target.classList.contains('overlay')) {
-    e.target.classList.remove('open');
-  }
-});
-
-// ═══════════════════════════════════════════════
-//  SUBJECTS
-// ═══════════════════════════════════════════════
-const COLORS = ['#2d6a4f','#1d5f8a','#7b4dbd','#b5651d','#c0392b','#16a085','#8b4513','#555'];
-
+// ══ SUBJECTS LIST ══
 function renderSubjects() {
   const data = getData();
   const list = document.getElementById('subject-list');
-
   if (data.subjects.length === 0) {
-    list.innerHTML = `<div class="empty">
-      <div class="empty-icon">📚</div>
-      <div class="empty-text">No subjects yet.<br>Add your first subject to get started.</div>
-    </div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">No subjects yet.<br>Add your first subject to get started.</div></div>`;
     return;
   }
 
   list.innerHTML = data.subjects.map(s => {
-    const total = s.topics.length;
-    const done = s.topics.filter(t => t.status === 'done').length;
-    const lastEntry = data.history.filter(h => h.subjectId === s.id).sort((a,b) => new Date(b.at) - new Date(a.at))[0];
-    const lastStudied = lastEntry ? fmtDate(lastEntry.at) : 'Never';
+    const color = COLORS[s.colorIdx % COLORS.length];
+    const sm    = STATUS_META[s.status || 'active'];
+    const last  = data.history.filter(h => h.subjectId === s.id).sort((a,b) => new Date(b.at)-new Date(a.at))[0];
+    const days  = last ? daysSince(last.at) : null;
 
-    return `<div class="subject-item" onclick="openSubject('${s.id}')">
-      <div class="subject-dot" style="background:${COLORS[s.colorIdx % COLORS.length]}"></div>
-      <div style="flex:1">
-        <div class="subject-name">${esc(s.name)}</div>
-        <div class="subject-meta">
-          ${total > 0 ? `${done}/${total} topics done · ` : ''}Last studied: ${lastStudied}
+    let daysBadge;
+    if      (days === null)  daysBadge = `<span class="days-ago days-never">Never</span>`;
+    else if (days === 0)     daysBadge = `<span class="days-ago days-fresh">Today</span>`;
+    else if (days <= 2)      daysBadge = `<span class="days-ago days-fresh">${days}d ago</span>`;
+    else if (days <= 5)      daysBadge = `<span class="days-ago days-warn">${days}d ago</span>`;
+    else                     daysBadge = `<span class="days-ago days-danger">${days}d ago ⚠</span>`;
+
+    const total = s.topics.length;
+    const done  = s.topics.filter(t => t.status === 'done').length;
+    const stuck = s.topics.filter(t => t.status === 'stuck').length;
+    let topicLine = total > 0 ? `${done}/${total} topics done${stuck > 0 ? ` · <span style="color:#c0392b">${stuck} stuck</span>` : ''}` : '';
+
+    return `<div class="subject-card">
+      <div class="subject-card-top">
+        <div class="subject-dot" style="background:${color}"></div>
+        <div class="subject-name" onclick="openSubject('${s.id}')">${esc(s.name)}</div>
+        <button class="subject-status ${sm.cls}" onclick="cycleStatusFromList('${s.id}')" title="Click to change">${sm.label}</button>
+        ${daysBadge}
+      </div>
+      ${s.stopped
+        ? `<div class="subject-stopped filled">📍 ${esc(s.stopped)}</div>`
+        : `<div class="subject-stopped" style="color:#bbb">No progress recorded yet</div>`}
+      ${s.nextTodo ? `<div class="subject-next">→ ${esc(s.nextTodo)}</div>` : ''}
+      <div class="subject-card-footer">
+        <div style="font-size:0.75rem;color:#aaa">${topicLine}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openSubject('${s.id}')">Open →</button>
+          <button class="btn btn-green btn-sm" onclick="openQuickUpdate('${s.id}')">Quick Update</button>
         </div>
-        ${s.nextTodo ? `<div style="font-size:0.78rem;color:#2d6a4f;margin-top:3px">→ ${esc(s.nextTodo)}</div>` : ''}
       </div>
     </div>`;
   }).join('');
 }
 
 function addSubject() {
-  const name = document.getElementById('f-subject-name').value.trim();
+  const name   = document.getElementById('f-subject-name').value.trim();
+  const status = document.getElementById('f-subject-status').value;
   if (!name) { toast('Enter a subject name'); return; }
-
   const data = getData();
-  data.subjects.push({
-    id: uid(),
-    name,
-    colorIdx: data.subjects.length,
-    topics: [],
-    stopped: '',
-    nextTodo: '',
-    createdAt: ts()
-  });
+  data.subjects.push({ id:uid(), name, colorIdx:data.subjects.length, status, topics:[], stopped:'', nextTodo:'', createdAt:ts() });
   saveData(data);
   document.getElementById('f-subject-name').value = '';
   closeModal('modal-add-subject');
   renderSubjects();
   buildSidebar();
-  toast('Subject added');
+  toast(`"${name}" added`);
 }
 
-// ═══════════════════════════════════════════════
-//  SUBJECT DETAIL
-// ═══════════════════════════════════════════════
+// ══ STATUS CYCLE ══
+function cycleStatusFromList(id) {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === id);
+  if (!s) return;
+  s.status = STATUS_CYCLE[(STATUS_CYCLE.indexOf(s.status || 'active') + 1) % STATUS_CYCLE.length];
+  saveData(data);
+  renderSubjects();
+  buildSidebar();
+}
+
+function cycleSubjectStatus() {
+  if (!currentSubjectId) return;
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  s.status = STATUS_CYCLE[(STATUS_CYCLE.indexOf(s.status || 'active') + 1) % STATUS_CYCLE.length];
+  saveData(data);
+  renderSubjectDetail();
+  buildSidebar();
+}
+
+// ══ SUBJECT DETAIL ══
 function openSubject(id) {
   currentSubjectId = id;
   showPage('subject');
   renderSubjectDetail();
-
-  // Mark active in sidebar
-  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.sb-subject-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.id === id);
-  });
+  buildSidebar();
 }
 
 function renderSubjectDetail() {
@@ -656,74 +650,76 @@ function renderSubjectDetail() {
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) { showPage('subjects'); return; }
 
+  const sm = STATUS_META[s.status || 'active'];
   document.getElementById('detail-title').textContent = s.name;
+  const stBtn = document.getElementById('detail-status-btn');
+  stBtn.textContent = sm.label;
+  stBtn.className = `subject-status ${sm.cls}`;
 
-  // Where stopped card
-  document.getElementById('ws-stopped').textContent = s.stopped || 'Nothing recorded yet';
-  const nextEl = document.getElementById('ws-next');
-  const nextText = document.getElementById('ws-next-text');
-  if (s.nextTodo) {
-    nextEl.style.display = 'block';
-    nextText.textContent = s.nextTodo;
-  } else {
-    nextEl.style.display = 'none';
-  }
+  const wsEl = document.getElementById('ws-stopped');
+  wsEl.textContent = s.stopped || 'Nothing recorded yet — click Update Progress';
+  wsEl.style.color = s.stopped ? '#fff' : '#555';
+
+  const wsNext = document.getElementById('ws-next');
+  if (s.nextTodo) { wsNext.style.display='block'; document.getElementById('ws-next-text').textContent = s.nextTodo; }
+  else            { wsNext.style.display='none'; }
 
   // Topics
   const topicList = document.getElementById('topic-list');
+  const countEl   = document.getElementById('topic-count');
   if (s.topics.length === 0) {
-    topicList.innerHTML = `<div style="color:#aaa;font-size:0.875rem;padding:12px 0">No topics added yet. Topics are optional.</div>`;
+    countEl.textContent = '';
+    topicList.innerHTML = `<div style="color:#bbb;font-size:0.85rem;padding:10px 0">No topics — optional. Add them to track specific chapters or modules.</div>`;
   } else {
-    topicList.innerHTML = s.topics.map(t => {
-      const statusCls = { todo:'s-todo', doing:'s-doing', done:'s-done', stuck:'s-stuck' }[t.status] || 's-todo';
-      const statusLabel = { todo:'To Do', doing:'In Progress', done:'Done', stuck:'Stuck' }[t.status] || 'To Do';
-      return `<div class="topic-item">
+    const done = s.topics.filter(t => t.status==='done').length;
+    countEl.textContent = `(${done}/${s.topics.length} done)`;
+    topicList.innerHTML = s.topics.map(t => `
+      <div class="topic-item">
         <div style="flex:1">
           <div class="topic-name">${esc(t.name)}</div>
           ${t.note ? `<div class="topic-note">${esc(t.note)}</div>` : ''}
         </div>
-        <select class="status-sel" onchange="changeTopicStatus('${t.id}', this.value)">
-          <option value="todo"   ${t.status==='todo'  ?'selected':''}>To Do</option>
-          <option value="doing"  ${t.status==='doing' ?'selected':''}>In Progress</option>
-          <option value="done"   ${t.status==='done'  ?'selected':''}>Done</option>
-          <option value="stuck"  ${t.status==='stuck' ?'selected':''}>Stuck</option>
+        <select class="status-sel" onchange="changeTopicStatus('${t.id}',this.value)">
+          <option value="todo"  ${t.status==='todo' ?'selected':''}>To Do</option>
+          <option value="doing" ${t.status==='doing'?'selected':''}>In Progress</option>
+          <option value="done"  ${t.status==='done' ?'selected':''}>Done</option>
+          <option value="stuck" ${t.status==='stuck'?'selected':''}>Stuck</option>
         </select>
         <button class="btn btn-red btn-sm" style="margin-left:6px" onclick="deleteTopic('${t.id}')">×</button>
-      </div>`;
-    }).join('');
+      </div>`).join('');
   }
 
-  // Last session note
-  const lastEntry = data.history
-    .filter(h => h.subjectId === currentSubjectId)
-    .sort((a,b) => new Date(b.at) - new Date(a.at))[0];
-
-  const lsnDiv = document.getElementById('last-session-note');
-  if (lastEntry && lastEntry.notes) {
-    lsnDiv.style.display = 'block';
-    document.getElementById('lsn-text').textContent = lastEntry.notes;
-  } else {
-    lsnDiv.style.display = 'none';
-  }
+  // Last notes
+  const lastEntry = data.history.filter(h => h.subjectId === currentSubjectId && h.notes).sort((a,b) => new Date(b.at)-new Date(a.at))[0];
+  const wrap = document.getElementById('last-notes-wrap');
+  if (lastEntry) { wrap.style.display='block'; document.getElementById('last-notes-text').textContent = lastEntry.notes; }
+  else           { wrap.style.display='none'; }
 }
 
-// ═══════════════════════════════════════════════
-//  TOPICS
-// ═══════════════════════════════════════════════
-function openAddTopic() {
-  document.getElementById('f-topic-name').value = '';
-  openModal('modal-add-topic');
+function deleteCurrentSubject() {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  if (!confirm(`Delete "${s.name}" and all its history? This cannot be undone.`)) return;
+  data.subjects = data.subjects.filter(s => s.id !== currentSubjectId);
+  data.history  = data.history.filter(h => h.subjectId !== currentSubjectId);
+  saveData(data);
+  currentSubjectId = null;
+  showPage('subjects');
+  buildSidebar();
+  toast('Subject deleted');
 }
+
+// ══ TOPICS ══
+function openAddTopic() { document.getElementById('f-topic-name').value = ''; openModal('modal-add-topic'); }
 
 function addTopic() {
   const name = document.getElementById('f-topic-name').value.trim();
   if (!name) { toast('Enter a topic name'); return; }
-
   const data = getData();
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
-
-  s.topics.push({ id: uid(), name, status: 'todo', note: '' });
+  s.topics.push({ id:uid(), name, status:'todo', note:'' });
   saveData(data);
   closeModal('modal-add-topic');
   renderSubjectDetail();
@@ -735,11 +731,10 @@ function changeTopicStatus(topicId, status) {
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
   const t = s.topics.find(t => t.id === topicId);
-  if (!t) return;
-  t.status = status;
+  if (t) t.status = status;
   saveData(data);
   renderSubjectDetail();
-  toast('Status updated');
+  toast('Updated');
 }
 
 function deleteTopic(topicId) {
@@ -753,134 +748,117 @@ function deleteTopic(topicId) {
   toast('Topic deleted');
 }
 
-// ═══════════════════════════════════════════════
-//  CHECK-IN (Update Progress)
-// ═══════════════════════════════════════════════
+// ══ UPDATE PROGRESS (full) ══
 function openCheckin() {
   const data = getData();
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
-
-  // Pre-fill last stopped
+  document.getElementById('checkin-title').textContent = `Update — ${s.name}`;
   document.getElementById('f-stopped').value = s.stopped || '';
-  document.getElementById('f-next').value = '';
-  document.getElementById('f-notes').value = '';
-  document.getElementById('f-status').value = '';
-
-  // Populate topic dropdown
+  document.getElementById('f-next').value    = s.nextTodo || '';
+  document.getElementById('f-notes').value   = '';
+  document.getElementById('f-status').value  = '';
   const sel = document.getElementById('f-topic-sel');
-  sel.innerHTML = '<option value="">— General / no specific topic —</option>' +
+  sel.innerHTML = '<option value="">— No specific topic —</option>' +
     s.topics.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
-
   openModal('modal-checkin');
 }
 
 function saveCheckin() {
   const stopped = document.getElementById('f-stopped').value.trim();
-  const next = document.getElementById('f-next').value.trim();
-  const notes = document.getElementById('f-notes').value.trim();
+  const next    = document.getElementById('f-next').value.trim();
+  const notes   = document.getElementById('f-notes').value.trim();
   const topicId = document.getElementById('f-topic-sel').value;
-  const status = document.getElementById('f-status').value;
-
-  if (!stopped && !next) {
-    toast('Fill in at least one field');
-    return;
-  }
-
+  const status  = document.getElementById('f-status').value;
+  if (!stopped && !next) { toast('Fill in at least one field'); return; }
   const data = getData();
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
-
-  // Update subject
   if (stopped) s.stopped = stopped;
-  if (next) s.nextTodo = next;
-
-  // Update topic status and note if selected
+  if (next)    s.nextTodo = next;
   if (topicId && status) {
     const t = s.topics.find(t => t.id === topicId);
-    if (t) {
-      t.status = status;
-      if (notes) t.note = notes;
-    }
+    if (t) { t.status = status; if (notes) t.note = notes; }
   }
-
-  // Save to history
-  data.history.unshift({
-    id: uid(),
-    subjectId: currentSubjectId,
-    subjectName: s.name,
-    topicId: topicId || null,
-    stopped,
-    next,
-    notes,
-    at: ts()
-  });
-
-  // Keep last 200 entries
+  data.history.unshift({ id:uid(), subjectId:currentSubjectId, subjectName:s.name, topicId:topicId||null, stopped, next, notes, at:ts() });
   if (data.history.length > 200) data.history.length = 200;
-
   saveData(data);
   closeModal('modal-checkin');
   renderSubjectDetail();
-  renderSubjects();
-  toast('Progress saved ✓');
+  toast('Saved ✓');
 }
 
-// ═══════════════════════════════════════════════
-//  HISTORY
-// ═══════════════════════════════════════════════
+// ══ QUICK UPDATE ══
+function openQuickUpdate(id) {
+  quickSubjectId = id;
+  const data = getData();
+  const s = data.subjects.find(s => s.id === id);
+  if (!s) return;
+  document.getElementById('quick-title').textContent = `Quick Update — ${s.name}`;
+  document.getElementById('q-stopped').value = s.stopped || '';
+  document.getElementById('q-next').value    = s.nextTodo || '';
+  document.getElementById('q-notes').value   = '';
+  openModal('modal-quick');
+}
+
+function saveQuick() {
+  const stopped = document.getElementById('q-stopped').value.trim();
+  const next    = document.getElementById('q-next').value.trim();
+  const notes   = document.getElementById('q-notes').value.trim();
+  if (!stopped && !next) { toast('Fill in at least one field'); return; }
+  const data = getData();
+  const s = data.subjects.find(s => s.id === quickSubjectId);
+  if (!s) return;
+  if (stopped) s.stopped = stopped;
+  if (next)    s.nextTodo = next;
+  data.history.unshift({ id:uid(), subjectId:quickSubjectId, subjectName:s.name, topicId:null, stopped, next, notes, at:ts() });
+  if (data.history.length > 200) data.history.length = 200;
+  saveData(data);
+  closeModal('modal-quick');
+  renderSubjects();
+  toast('Saved ✓');
+}
+
+// ══ HISTORY ══
 function renderHistory() {
   const data = getData();
-  const list = document.getElementById('history-list');
+  const filter   = document.getElementById('history-filter');
+  const selected = filter.value;
+  filter.innerHTML = '<option value="">All subjects</option>' +
+    data.subjects.map(s => `<option value="${s.id}" ${s.id===selected?'selected':''}>${esc(s.name)}</option>`).join('');
 
-  if (data.history.length === 0) {
-    list.innerHTML = `<div class="empty">
-      <div class="empty-icon">📋</div>
-      <div class="empty-text">No history yet. Update your progress after studying.</div>
-    </div>`;
+  let entries = selected ? data.history.filter(h => h.subjectId === selected) : data.history;
+  const list  = document.getElementById('history-list');
+
+  if (entries.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No history yet.<br>Update your progress after each session.</div></div>`;
     return;
   }
 
-  list.innerHTML = data.history.map(h => {
+  list.innerHTML = entries.map(h => {
     const parts = [];
-    if (h.stopped) parts.push(`<div><strong>Stopped at:</strong> ${esc(h.stopped)}</div>`);
-    if (h.next) parts.push(`<div style="color:#2d6a4f"><strong>Next:</strong> ${esc(h.next)}</div>`);
-    if (h.notes) parts.push(`<div style="color:#888"><strong>Notes:</strong> ${esc(h.notes)}</div>`);
-
+    if (h.stopped) parts.push(`<div>📍 <strong>Stopped:</strong> ${esc(h.stopped)}</div>`);
+    if (h.next)    parts.push(`<div style="color:#2d6a4f">→ <strong>Next:</strong> ${esc(h.next)}</div>`);
+    if (h.notes)   parts.push(`<div style="color:#888">📝 ${esc(h.notes)}</div>`);
     return `<div class="log-entry">
-      <div class="log-date">${fmtDate(h.at)} · <strong>${esc(h.subjectName)}</strong></div>
-      <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">${parts.join('')}</div>
+      <div class="log-date">${fmtDate(h.at)} · <strong style="color:#333">${esc(h.subjectName)}</strong></div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-top:5px;line-height:1.5">${parts.join('')}</div>
     </div>`;
   }).join('');
 }
 
-// ═══════════════════════════════════════════════
-//  SIDEBAR
-// ═══════════════════════════════════════════════
+// ══ SIDEBAR ══
 function buildSidebar() {
-  const name = getName();
-  document.getElementById('sb-name').textContent = name || 'Student';
-
+  document.getElementById('sb-name').textContent = getName() || 'Student';
   const data = getData();
-  const container = document.getElementById('sb-subjects');
-  container.innerHTML = data.subjects.map(s => `
-    <button class="sidebar-btn sb-subject-btn ${currentSubjectId === s.id ? 'active' : ''}"
-      data-id="${s.id}" onclick="openSubject('${s.id}')">
-      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${COLORS[s.colorIdx % COLORS.length]};margin-right:8px"></span>
-      ${esc(s.name)}
+  document.getElementById('sb-subjects').innerHTML = data.subjects.map(s =>
+    `<button class="sidebar-btn sb-subject-btn ${currentSubjectId===s.id?'active':''}" data-id="${s.id}" onclick="openSubject('${s.id}')">
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLORS[s.colorIdx%COLORS.length]};margin-right:8px;flex-shrink:0;vertical-align:middle"></span>${esc(s.name)}
     </button>`).join('');
 }
 
-// ═══════════════════════════════════════════════
-//  SETTINGS
-// ═══════════════════════════════════════════════
-function saveName() {
-  const name = document.getElementById('settings-name').value.trim();
-  saveName2(name);
-  buildSidebar();
-  toast('Name saved');
-}
-
+// ══ SETTINGS ══
+function saveName() { const n = document.getElementById('settings-name').value.trim(); saveName2(n); buildSidebar(); toast('Name saved'); }
 function resetAll() {
   if (!confirm('Delete everything and start fresh?')) return;
   localStorage.removeItem('st2_data');
@@ -888,21 +866,9 @@ function resetAll() {
   location.reload();
 }
 
-// ═══════════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════════
-function esc(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ═══════════════════════════════════════════════
-//  BOOT
-// ═══════════════════════════════════════════════
+// ══ BOOT ══
 buildSidebar();
 renderSubjects();
 </script>
-
 </body>
 </html>
