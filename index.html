@@ -154,6 +154,15 @@
     .section-head { font-size:0.85rem; font-weight:600; color:#555; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
 
     #toast { position:fixed; bottom:24px; right:24px; background:#1a1a1a; color:#fff; padding:11px 18px; border-radius:8px; font-size:0.85rem; opacity:0; transition:opacity 0.25s; z-index:999; pointer-events:none; }
+    #sync-status { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1a1a1a; color:#aaa; padding:6px 14px; border-radius:20px; font-size:0.75rem; opacity:0; transition:opacity 0.4s; z-index:998; pointer-events:none; white-space:nowrap; }
+    #sync-status.show { opacity:1; }
+    #sync-status.ok   { color:#4caf50; }
+    #sync-status.err  { color:#e74c3c; }
+    .sync-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; background:#aaa; }
+    .sync-dot.ok  { background:#4caf50; }
+    .sync-dot.err { background:#e74c3c; }
+    .sync-dot.spin { animation: spin 1s linear infinite; background:#b5651d; }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
     #toast.show { opacity:1; }
 
     @media(max-width:600px) { .sidebar{width:180px;} .main{margin-left:180px;padding:20px 16px;} .row{flex-direction:column;} }
@@ -164,7 +173,7 @@
 
   <!-- SIDEBAR -->
   <nav class="sidebar">
-    <div class="sidebar-brand">StudyTrail<span id="sb-name">Student</span></div>
+    <div class="sidebar-brand">StudyTrail<span id="sb-name">Student</span><span id="sb-sync-dot" class="sync-dot" title="Sync status" style="margin-top:6px;display:inline-block"></span></div>
     <div class="sidebar-section">Subjects</div>
     <div id="sb-subjects"></div>
     <div class="sidebar-section">More</div>
@@ -262,6 +271,44 @@
           <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
         </div>
         <div id="backup-status" style="font-size:0.78rem;color:#aaa"></div>
+      </div>
+
+      <!-- GitHub Gist Sync -->
+      <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:20px 24px;margin-bottom:12px">
+        <div style="font-weight:600;margin-bottom:4px">&#x2601; GitHub Gist Sync</div>
+        <p style="font-size:0.85rem;color:#888;margin-bottom:14px">Your data syncs automatically to a private GitHub Gist. Works across devices and survives browser resets.</p>
+
+        <div id="sync-setup" style="display:none">
+          <div class="field">
+            <label>GitHub Personal Access Token <span style="color:#aaa;font-weight:400">(gist scope only)</span></label>
+            <input type="password" id="gist-token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+            <div style="font-size:0.75rem;color:#aaa;margin-top:4px">
+              Get one at <strong>github.com/settings/tokens</strong> → Generate new token → tick <strong>gist</strong> only
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-green" onclick="saveGistToken()">Connect</button>
+            <button class="btn btn-gray" onclick="cancelSyncSetup()">Cancel</button>
+          </div>
+        </div>
+
+        <div id="sync-connected" style="display:none">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <span class="sync-dot ok"></span>
+            <span style="font-size:0.875rem;font-weight:500;color:#2d6a4f">Connected</span>
+            <span id="sync-gist-link" style="font-size:0.75rem;color:#aaa"></span>
+          </div>
+          <div id="sync-last-time" style="font-size:0.78rem;color:#aaa;margin-bottom:14px"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-green btn-sm" onclick="syncToGist(true)">&#x21BB; Sync Now</button>
+            <button class="btn btn-gray btn-sm" onclick="loadFromGist(true)">&#x2B07; Pull from Gist</button>
+            <button class="btn btn-red btn-sm" onclick="disconnectGist()">Disconnect</button>
+          </div>
+        </div>
+
+        <div id="sync-disconnected">
+          <button class="btn btn-gray" onclick="showSyncSetup()">&#x2795; Connect GitHub Gist</button>
+        </div>
       </div>
 
       <div style="background:#fff;border:1px solid #f5c6bf;border-radius:12px;padding:20px 24px;margin-top:4px">
@@ -381,6 +428,7 @@
 </div>
 
 <div id="toast"></div>
+<div id="sync-status"></div>
 
 <script>
 // ══ DATA ══
@@ -1081,42 +1129,239 @@ function saveData(d) {
   } catch(e) {}
 }
 
+// ══ GITHUB GIST SYNC ══
+
+const GIST_TOKEN_KEY = 'st2_gist_token';
+const GIST_ID_KEY    = 'st2_gist_id';
+const GIST_FILENAME  = 'studytrail-data.json';
+
+function getGistToken() { return localStorage.getItem(GIST_TOKEN_KEY) || ''; }
+function getGistId()    { return localStorage.getItem(GIST_ID_KEY) || ''; }
+
+function setSyncDot(state) {
+  // state: 'ok' | 'err' | 'spin' | 'off'
+  const dot = document.getElementById('sb-sync-dot');
+  if (!dot) return;
+  dot.className = 'sync-dot' + (state !== 'off' ? ' ' + state : '');
+  dot.title = state === 'ok' ? 'Synced to GitHub Gist' : state === 'err' ? 'Sync failed — check token' : state === 'spin' ? 'Syncing…' : 'Not connected';
+}
+
+function showSyncIndicator(msg, type) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'show ' + (type || '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = '', 3000);
+}
+
+async function syncToGist(manual) {
+  const token = getGistToken();
+  if (!token) return;
+  const data  = getData();
+  const name  = getName();
+  const payload = JSON.stringify({ version:2, name, savedAt: ts(), data }, null, 2);
+
+  setSyncDot('spin');
+  if (manual) showSyncIndicator('Syncing…', '');
+
+  try {
+    const gistId = getGistId();
+    let url    = 'https://api.github.com/gists';
+    let method = 'POST';
+    let body   = { description:'StudyTrail Data', public:false, files:{ [GIST_FILENAME]:{ content: payload } } };
+
+    if (gistId) {
+      url    = 'https://api.github.com/gists/' + gistId;
+      method = 'PATCH';
+      body   = { files:{ [GIST_FILENAME]:{ content: payload } } };
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Authorization':'token ' + token, 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    if (!gistId) {
+      localStorage.setItem(GIST_ID_KEY, json.id);
+    }
+
+    const now = new Date().toLocaleString('en-AU');
+    localStorage.setItem('st2_last_sync', now);
+    setSyncDot('ok');
+    showSyncIndicator('✓ Synced to GitHub', 'ok');
+    if (manual) {
+      toast('Synced to GitHub Gist ✓');
+      updateSyncUI();
+    }
+  } catch(e) {
+    setSyncDot('err');
+    showSyncIndicator('Sync failed', 'err');
+    if (manual) toast('Sync failed — check your token in Settings');
+  }
+}
+
+async function loadFromGist(manual) {
+  const token  = getGistToken();
+  const gistId = getGistId();
+  if (!token || !gistId) return;
+
+  if (manual) showSyncIndicator('Loading from Gist…', '');
+  setSyncDot('spin');
+
+  try {
+    const res = await fetch('https://api.github.com/gists/' + gistId, {
+      headers: { 'Authorization':'token ' + token }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json    = await res.json();
+    const file    = json.files[GIST_FILENAME];
+    if (!file) throw new Error('File not found in gist');
+    const payload = JSON.parse(file.content);
+    const remote  = payload.data || payload;
+
+    if (!remote.subjects) throw new Error('Invalid data');
+
+    // Only overwrite if remote is newer or manual pull
+    const localData = getData();
+    const localCount  = (localData.history || []).length;
+    const remoteCount = (remote.history || []).length;
+
+    if (manual || remoteCount >= localCount) {
+      localStorage.setItem('st2_data', JSON.stringify(remote));
+      if (payload.name) saveName2(payload.name);
+      buildSidebar();
+      renderSubjects();
+      updateReminderBadge();
+      if (manual) toast('Data loaded from GitHub Gist ✓');
+    }
+
+    setSyncDot('ok');
+    showSyncIndicator('✓ Up to date', 'ok');
+    updateSyncUI();
+  } catch(e) {
+    setSyncDot('err');
+    if (manual) toast('Could not load from Gist — check your token');
+  }
+}
+
+function showSyncSetup() {
+  document.getElementById('sync-disconnected').style.display = 'none';
+  document.getElementById('sync-setup').style.display = 'block';
+  document.getElementById('sync-connected').style.display = 'none';
+  // Pre-fill if token exists but no gist yet
+  const t = getGistToken();
+  if (t) document.getElementById('gist-token-input').value = t;
+}
+
+function cancelSyncSetup() {
+  updateSyncUI();
+}
+
+async function saveGistToken() {
+  const token = document.getElementById('gist-token-input').value.trim();
+  if (!token) { toast('Paste your GitHub token first'); return; }
+
+  // Validate token by hitting the API
+  showSyncIndicator('Connecting…', '');
+  try {
+    const res = await fetch('https://api.github.com/user', {
+      headers: { 'Authorization':'token ' + token }
+    });
+    if (!res.ok) throw new Error('Invalid token');
+    const user = await res.json();
+    localStorage.setItem(GIST_TOKEN_KEY, token);
+    // Clear old gist ID so a new one gets created
+    localStorage.removeItem(GIST_ID_KEY);
+    toast('Connected as ' + user.login + ' ✓');
+    updateSyncUI();
+    // Immediately sync up
+    await syncToGist(false);
+    updateSyncUI();
+  } catch(e) {
+    toast('Could not connect — check your token has gist scope');
+    setSyncDot('err');
+  }
+}
+
+function disconnectGist() {
+  if (!confirm('Disconnect GitHub sync? Your local data stays, sync stops.')) return;
+  localStorage.removeItem(GIST_TOKEN_KEY);
+  localStorage.removeItem(GIST_ID_KEY);
+  localStorage.removeItem('st2_last_sync');
+  updateSyncUI();
+  setSyncDot('off');
+  toast('Disconnected from GitHub Gist');
+}
+
+function updateSyncUI() {
+  const token  = getGistToken();
+  const gistId = getGistId();
+  const setup  = document.getElementById('sync-setup');
+  const conn   = document.getElementById('sync-connected');
+  const disc   = document.getElementById('sync-disconnected');
+  if (!setup || !conn || !disc) return;
+
+  setup.style.display = 'none';
+
+  if (token) {
+    conn.style.display  = 'block';
+    disc.style.display  = 'none';
+    const lastSync = localStorage.getItem('st2_last_sync');
+    document.getElementById('sync-last-time').textContent = lastSync ? 'Last synced: ' + lastSync : 'Not synced yet';
+    const linkEl = document.getElementById('sync-gist-link');
+    if (gistId) linkEl.innerHTML = '<a href="https://gist.github.com/' + gistId + '" target="_blank" style="color:#2d6a4f">View Gist ↗</a>';
+    else linkEl.textContent = '';
+    setSyncDot('ok');
+  } else {
+    conn.style.display  = 'none';
+    disc.style.display  = 'block';
+    setSyncDot('off');
+  }
+}
+
+// Wrap saveData to auto-sync after every save (debounced)
+let _syncTimer = null;
+const _baseSave = saveData;
+function saveData(d) {
+  localStorage.setItem('st2_data', JSON.stringify(d));
+  try { localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: d })); } catch(e) {}
+  // Debounce sync — wait 1.5s after last save before pushing
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => syncToGist(false), 1500);
+}
+
 // ══ BOOT ══
-// On load: check if main data is empty but backup exists — offer to restore
-(function checkBackup() {
+(function boot() {
+  // 1. Check local backup
   const main   = localStorage.getItem('st2_data');
   const backup = localStorage.getItem('st2_backup');
-  if ((!main || main === '{}' || JSON.parse(main||'{}').subjects?.length === 0) && backup) {
+  if ((!main || main === '{}' || (JSON.parse(main||'{}').subjects||[]).length === 0) && backup) {
     try {
       const b = JSON.parse(backup);
       if (b.data && b.data.subjects && b.data.subjects.length > 0) {
         const when = b.backedUpAt ? new Date(b.backedUpAt).toLocaleString('en-AU') : 'recently';
-        if (confirm('Your data appears empty but a backup from ' + when + ' was found. Restore it?')) {
+        if (confirm('Your data appears empty but a local backup from ' + when + ' was found. Restore it?')) {
           localStorage.setItem('st2_data', JSON.stringify(b.data));
-          toast('Data restored from backup ✓');
         }
       }
     } catch(e) {}
   }
-})();
 
-buildSidebar();
-renderSubjects();
-updateReminderBadge();
+  buildSidebar();
+  renderSubjects();
+  updateReminderBadge();
+  updateSyncUI();
 
-// Show last backup time in settings if already on that page
-document.addEventListener('DOMContentLoaded', function() {
-  const b = localStorage.getItem('st2_backup');
-  if (b) {
-    try {
-      const parsed = JSON.parse(b);
-      const el = document.getElementById('backup-status');
-      if (el && parsed.backedUpAt) {
-        el.textContent = 'Auto-backup last updated: ' + new Date(parsed.backedUpAt).toLocaleString('en-AU');
-      }
-    } catch(e) {}
+  // 2. If connected to Gist, load latest data on open
+  if (getGistToken() && getGistId()) {
+    loadFromGist(false);
   }
-});
+})();
 </script>
 </body>
 </html>
