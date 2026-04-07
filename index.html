@@ -247,13 +247,26 @@
     <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <div class="page-title" style="margin-bottom:24px">Settings</div>
+
       <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:20px 24px;margin-bottom:12px">
         <div class="field"><label>Your name</label><input id="settings-name" type="text" placeholder="Your name"></div>
         <button class="btn btn-green" onclick="saveName()">Save</button>
       </div>
-      <div style="background:#fff;border:1px solid #f5c6bf;border-radius:12px;padding:20px 24px;margin-top:16px">
+
+      <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:20px 24px;margin-bottom:12px">
+        <div style="font-weight:600;margin-bottom:6px">&#x1F4BE; Backup &amp; Restore</div>
+        <p style="font-size:0.85rem;color:#888;margin-bottom:16px">Export your data as a file to your computer. Import it back anytime to restore everything.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="btn btn-green" onclick="exportData()">&#x2B07; Export / Download backup</button>
+          <button class="btn btn-gray" onclick="document.getElementById('import-file').click()">&#x2B06; Import / Restore backup</button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+        </div>
+        <div id="backup-status" style="font-size:0.78rem;color:#aaa"></div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #f5c6bf;border-radius:12px;padding:20px 24px;margin-top:4px">
         <div style="font-weight:600;color:#c0392b;margin-bottom:6px">Danger Zone</div>
-        <p style="font-size:0.85rem;color:#888;margin-bottom:14px">Permanently delete all data.</p>
+        <p style="font-size:0.85rem;color:#888;margin-bottom:14px">Permanently delete all data. Export a backup first!</p>
         <button class="btn btn-red" onclick="resetAll()">Reset Everything</button>
       </div>
     </div>
@@ -1006,15 +1019,104 @@ function buildSidebar() {
 function saveName() { const n = document.getElementById('settings-name').value.trim(); saveName2(n); buildSidebar(); toast('Name saved'); }
 function resetAll() {
   if (!confirm('Delete everything and start fresh?')) return;
+  if (!confirm('Are you sure? Export a backup first if you want to keep your data.')) return;
   localStorage.removeItem('st2_data');
   localStorage.removeItem('st2_name');
+  localStorage.removeItem('st2_backup');
   location.reload();
 }
 
+// ══ EXPORT / IMPORT / BACKUP ══
+function exportData() {
+  const data = getData();
+  const name = getName();
+  const payload = { version: 2, name, exportedAt: ts(), data };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'studytrail-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded ✓');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const payload = JSON.parse(e.target.result);
+      // Support both raw data and wrapped export format
+      const data = payload.data || payload;
+      if (!data.subjects || !Array.isArray(data.subjects)) {
+        toast('Invalid backup file', 'error');
+        return;
+      }
+      if (!confirm('This will replace all your current data with the backup. Continue?')) return;
+      saveData(data);
+      if (payload.name) saveName2(payload.name);
+      document.getElementById('backup-status').textContent = 'Restored from backup: ' + file.name;
+      toast('Data restored ✓');
+      buildSidebar();
+      renderSubjects();
+      updateReminderBadge();
+    } catch(err) {
+      toast('Could not read file — make sure it is a StudyTrail backup');
+    }
+  };
+  reader.readAsText(file);
+  // Reset input so same file can be selected again
+  event.target.value = '';
+}
+
+// Auto-backup: every time data is saved, keep a rolling backup copy
+const _origSaveData = saveData;
+function saveData(d) {
+  localStorage.setItem('st2_data', JSON.stringify(d));
+  // Also write a backup copy with timestamp
+  try {
+    localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: d }));
+  } catch(e) {}
+}
+
 // ══ BOOT ══
+// On load: check if main data is empty but backup exists — offer to restore
+(function checkBackup() {
+  const main   = localStorage.getItem('st2_data');
+  const backup = localStorage.getItem('st2_backup');
+  if ((!main || main === '{}' || JSON.parse(main||'{}').subjects?.length === 0) && backup) {
+    try {
+      const b = JSON.parse(backup);
+      if (b.data && b.data.subjects && b.data.subjects.length > 0) {
+        const when = b.backedUpAt ? new Date(b.backedUpAt).toLocaleString('en-AU') : 'recently';
+        if (confirm('Your data appears empty but a backup from ' + when + ' was found. Restore it?')) {
+          localStorage.setItem('st2_data', JSON.stringify(b.data));
+          toast('Data restored from backup ✓');
+        }
+      }
+    } catch(e) {}
+  }
+})();
+
 buildSidebar();
 renderSubjects();
 updateReminderBadge();
+
+// Show last backup time in settings if already on that page
+document.addEventListener('DOMContentLoaded', function() {
+  const b = localStorage.getItem('st2_backup');
+  if (b) {
+    try {
+      const parsed = JSON.parse(b);
+      const el = document.getElementById('backup-status');
+      if (el && parsed.backedUpAt) {
+        el.textContent = 'Auto-backup last updated: ' + new Date(parsed.backedUpAt).toLocaleString('en-AU');
+      }
+    } catch(e) {}
+  }
+});
 </script>
 </body>
 </html>
