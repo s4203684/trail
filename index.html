@@ -536,8 +536,44 @@
 
 <script>
 // ══ DATA ══
-function getData()    { try { return JSON.parse(localStorage.getItem('st2_data')) || {subjects:[],history:[]}; } catch { return {subjects:[],history:[]}; } }
-function saveData(d)  { localStorage.setItem('st2_data', JSON.stringify(d)); }
+function normalizeData(raw) {
+  const data = raw && typeof raw === 'object' ? raw : {};
+  const subjects = Array.isArray(data.subjects) ? data.subjects : [];
+  const history = Array.isArray(data.history) ? data.history : [];
+  return {
+    subjects: subjects.map((s, idx) => ({
+      id: s && s.id ? s.id : uid(),
+      name: s && s.name ? s.name : `Subject ${idx + 1}`,
+      colorIdx: Number.isInteger(s && s.colorIdx) ? s.colorIdx : idx,
+      status: s && s.status ? s.status : 'active',
+      topics: Array.isArray(s && s.topics) ? s.topics.map(t => ({
+        id: t && t.id ? t.id : uid(),
+        name: t && t.name ? t.name : 'Untitled topic',
+        status: t && t.status ? t.status : 'todo',
+        note: t && t.note ? t.note : ''
+      })) : [],
+      stopped: s && s.stopped ? s.stopped : '',
+      nextTodo: s && s.nextTodo ? s.nextTodo : '',
+      createdAt: s && s.createdAt ? s.createdAt : ts(),
+      deadlineTitle: s && s.deadlineTitle ? s.deadlineTitle : '',
+      deadlineDate: s && s.deadlineDate ? s.deadlineDate : ''
+    })),
+    history: history.map(h => ({
+      id: h && h.id ? h.id : uid(),
+      subjectId: h && h.subjectId ? h.subjectId : '',
+      subjectName: h && h.subjectName ? h.subjectName : 'Unknown subject',
+      topicId: h && h.topicId ? h.topicId : null,
+      stopped: h && h.stopped ? h.stopped : '',
+      next: h && h.next ? h.next : '',
+      notes: h && h.notes ? h.notes : '',
+      remindOn: h && h.remindOn ? h.remindOn : null,
+      remindDone: !!(h && h.remindDone),
+      at: h && h.at ? h.at : ts()
+    }))
+  };
+}
+function getData()    { try { return normalizeData(JSON.parse(localStorage.getItem('st2_data')) || {subjects:[],history:[]}); } catch { return normalizeData({subjects:[],history:[]}); } }
+function saveData(d)  { localStorage.setItem('st2_data', JSON.stringify(normalizeData(d))); }
 function getName()    { return localStorage.getItem('st2_name') || ''; }
 function saveName2(n) { localStorage.setItem('st2_name', n); }
 function uid()        { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
@@ -1414,10 +1450,11 @@ function importData(event) {
 // Auto-backup: every time data is saved, keep a rolling backup copy
 const _origSaveData = saveData;
 function saveData(d) {
-  localStorage.setItem('st2_data', JSON.stringify(d));
+  const normalized = normalizeData(d);
+  localStorage.setItem('st2_data', JSON.stringify(normalized));
   // Also write a backup copy with timestamp
   try {
-    localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: d }));
+    localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: normalized }));
   } catch(e) {}
 }
 
@@ -1459,6 +1496,14 @@ async function findExistingStudyTrailGist(token) {
     if (!Array.isArray(gists) || gists.length < 100) break;
   }
   return '';
+}
+
+async function readGistFileContent(file) {
+  if (file && !file.truncated && typeof file.content === 'string') return file.content;
+  if (!file || !file.raw_url) throw new Error('File not found in gist');
+  const res = await fetch(file.raw_url);
+  if (!res.ok) throw new Error('Could not fetch gist content');
+  return await res.text();
 }
 
 async function syncToGist(manual) {
@@ -1537,8 +1582,8 @@ async function loadFromGist(manual) {
     const json    = await res.json();
     const file    = json.files[GIST_FILENAME];
     if (!file) throw new Error('File not found in gist');
-    const payload = JSON.parse(file.content);
-    const remote  = payload.data || payload;
+    const payload = JSON.parse(await readGistFileContent(file));
+    const remote  = normalizeData(payload.data || payload);
 
     if (!remote.subjects) throw new Error('Invalid data');
 
@@ -1553,7 +1598,10 @@ async function loadFromGist(manual) {
       buildSidebar();
       renderSubjects();
       updateReminderBadge();
-      if (manual) toast('Data loaded from GitHub Gist ✓');
+      if (manual) {
+        showPage('subjects');
+        toast('Data loaded from GitHub Gist ✓');
+      }
     }
 
     setSyncDot('ok');
@@ -1650,8 +1698,9 @@ function updateSyncUI() {
 let _syncTimer = null;
 const _baseSave = saveData;
 function saveData(d) {
-  localStorage.setItem('st2_data', JSON.stringify(d));
-  try { localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: d })); } catch(e) {}
+  const normalized = normalizeData(d);
+  localStorage.setItem('st2_data', JSON.stringify(normalized));
+  try { localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: normalized })); } catch(e) {}
   // Debounce sync — wait 1.5s after last save before pushing
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(() => syncToGist(false), 1500);
