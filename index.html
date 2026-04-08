@@ -187,7 +187,66 @@
     @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
     #toast.show { opacity:1; }
 
-    @media(max-width:600px) { .sidebar{width:180px;} .main{margin-left:180px;padding:20px 16px;} .row{flex-direction:column;} }
+    @media(max-width:760px) {
+      .shell { display:block; }
+      .sidebar {
+        position:sticky;
+        top:0;
+        left:auto;
+        width:100%;
+        height:auto;
+        z-index:50;
+        border-bottom:1px solid #2a2a2a;
+      }
+      .sidebar-brand { padding:16px 16px 12px; }
+      .sidebar-section { padding:12px 16px 6px; }
+      #sb-subjects {
+        display:flex;
+        gap:8px;
+        overflow-x:auto;
+        padding:0 12px 10px;
+        scrollbar-width:none;
+      }
+      #sb-subjects::-webkit-scrollbar { display:none; }
+      .sidebar-btn {
+        display:inline-block;
+        width:auto;
+        min-width:max-content;
+        padding:10px 12px;
+        border-left:none;
+        border-bottom:2px solid transparent;
+        border-radius:10px;
+        background:#222;
+        margin:0;
+      }
+      .sidebar-btn.active { border-left-color:transparent; border-bottom-color:#4caf50; background:#1a2a1a; }
+      .main { margin-left:0; max-width:none; padding:18px 14px 28px; }
+      .row { flex-direction:column; }
+      .page-header { margin-bottom:18px; }
+      .subject-card,
+      .insight-card,
+      .ws-card,
+      .session-entry,
+      .modal { border-radius:10px; }
+      .topic-item { flex-wrap:wrap; }
+      select.status-sel { width:100%; }
+    }
+
+    @media(max-width:480px) {
+      .page-title { font-size:1.28rem; }
+      .main { padding:14px 12px 24px; }
+      .subject-card,
+      .insight-card,
+      .session-entry { padding:15px 16px; }
+      .modal { padding:18px 14px; }
+      .modal-footer { flex-wrap:wrap; }
+      .modal-footer .btn { width:100%; }
+      .btn { width:100%; text-align:center; }
+      .btn.btn-sm { width:auto; }
+      .subject-card-footer { align-items:stretch; }
+      .subject-card-footer > div:last-child { width:100%; }
+      .subject-card-footer > div:last-child .btn { width:100%; }
+    }
   </style>
 </head>
 <body>
@@ -1389,13 +1448,17 @@ function showSyncIndicator(msg, type) {
 }
 
 async function findExistingStudyTrailGist(token) {
-  const res = await fetch('https://api.github.com/gists', {
-    headers: { 'Authorization':'token ' + token }
-  });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const gists = await res.json();
-  const match = gists.find(g => g.files && g.files[GIST_FILENAME]);
-  return match ? match.id : '';
+  for (let page = 1; page <= 5; page++) {
+    const res = await fetch(`https://api.github.com/gists?per_page=100&page=${page}`, {
+      headers: { 'Authorization':'token ' + token }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const gists = await res.json();
+    const match = gists.find(g => g.files && g.files[GIST_FILENAME]);
+    if (match) return match.id;
+    if (!Array.isArray(gists) || gists.length < 100) break;
+  }
+  return '';
 }
 
 async function syncToGist(manual) {
@@ -1448,7 +1511,7 @@ async function syncToGist(manual) {
   } catch(e) {
     setSyncDot('err');
     showSyncIndicator('Sync failed', 'err');
-    if (manual) toast('Sync failed — check your token in Settings');
+    if (manual) toast('Sync failed — check token or internet connection');
   }
 }
 
@@ -1498,7 +1561,11 @@ async function loadFromGist(manual) {
     updateSyncUI();
   } catch(e) {
     setSyncDot('err');
-    if (manual) toast('Could not load from Gist — check your token');
+    showSyncIndicator('Load failed', 'err');
+    if (manual) {
+      const msg = String(e && e.message || '');
+      toast(msg === 'No StudyTrail gist found' ? 'No StudyTrail gist found for this token yet' : 'Could not load from Gist — check token or internet');
+    }
   }
 }
 
@@ -1539,6 +1606,7 @@ async function saveGistToken() {
   } catch(e) {
     toast('Could not connect — check your token has gist scope');
     setSyncDot('err');
+    showSyncIndicator('Connection failed', 'err');
   }
 }
 
