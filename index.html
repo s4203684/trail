@@ -48,6 +48,7 @@
     /* ── Subject cards (list) ── */
     .subject-card { background:#fff; border:1px solid #e8e8e4; border-radius:12px; padding:18px 20px; margin-bottom:10px; transition:box-shadow 0.15s; }
     .subject-card:hover { box-shadow:0 2px 10px rgba(0,0,0,0.07); }
+    .subject-card.urgent { border-color:#f5c6bf; box-shadow:0 2px 10px rgba(192,57,43,0.08); }
     .subject-card-top { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
     .subject-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
     .subject-name { font-weight:600; font-size:0.95rem; flex:1; cursor:pointer; }
@@ -70,6 +71,27 @@
     .remind-due   { background:#fce8e4; color:#c0392b; font-size:0.72rem; padding:2px 9px; border-radius:20px; font-weight:600; }
     .remind-today { background:#fdf0e0; color:#b5651d; font-size:0.72rem; padding:2px 9px; border-radius:20px; font-weight:600; }
     .remind-ok    { background:#d8f3dc; color:#2d6a4f; font-size:0.72rem; padding:2px 9px; border-radius:20px; font-weight:500; }
+    .deadline-due,
+    .deadline-soon,
+    .deadline-ok { font-size:0.72rem; padding:2px 9px; border-radius:20px; font-weight:600; }
+    .deadline-due { background:#fce8e4; color:#c0392b; }
+    .deadline-soon { background:#fdf0e0; color:#b5651d; }
+    .deadline-ok { background:#eef5ff; color:#1d5f8a; }
+
+    /* ── Focus + summary cards ── */
+    .insight-card {
+      background:#fff;
+      border:1px solid #e8e8e4;
+      border-radius:12px;
+      padding:18px 20px;
+      margin-bottom:16px;
+    }
+    .insight-card.focus { border-color:#d8f3dc; background:linear-gradient(135deg, #ffffff 0%, #f5fbf7 100%); }
+    .insight-card.summary { background:linear-gradient(135deg, #ffffff 0%, #fbfaf6 100%); }
+    .insight-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin-bottom:8px; }
+    .insight-title { font-size:1.05rem; font-weight:700; margin-bottom:8px; }
+    .insight-text { font-size:0.88rem; color:#555; line-height:1.55; }
+    .insight-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
 
     /* ── Subject detail ── */
     .ws-card { background:#1a1a1a; color:#fff; border-radius:10px; padding:20px 24px; margin-bottom:16px; }
@@ -190,6 +212,8 @@
         <div class="page-title">My Subjects</div>
         <button class="btn btn-green" onclick="openModal('modal-add-subject')">+ Add Subject</button>
       </div>
+      <div id="focus-card"></div>
+      <div id="weekly-summary"></div>
       <div id="revision-banner"></div>
       <div id="subject-list"></div>
     </div>
@@ -216,6 +240,25 @@
         <div class="ws-next" id="ws-next" style="display:none">
           <strong>Next up</strong>
           <span id="ws-next-text"></span>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:18px 20px;margin-bottom:16px">
+        <div class="section-head" style="margin-bottom:14px">Deadline</div>
+        <div class="row">
+          <div class="field flex1" style="margin:0">
+            <label>Deadline title <span style="color:#aaa;font-weight:400">(optional)</span></label>
+            <input id="detail-deadline-title" type="text" placeholder="e.g. Assignment 2, Final exam">
+          </div>
+          <div class="field" style="margin:0;min-width:180px">
+            <label>Deadline date <span style="color:#aaa;font-weight:400">(optional)</span></label>
+            <input id="detail-deadline-date" type="date">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-green btn-sm" onclick="saveSubjectDeadline()">Save Deadline</button>
+          <button class="btn btn-gray btn-sm" onclick="clearSubjectDeadline()">Clear</button>
+          <span id="detail-deadline-status" style="font-size:0.8rem;color:#888;align-self:center"></span>
         </div>
       </div>
 
@@ -334,6 +377,8 @@
         <option value="done">Done</option>
       </select>
     </div>
+    <div class="field"><label>Deadline title <span style="color:#aaa;font-weight:400">(optional)</span></label><input id="f-deadline-title" type="text" placeholder="e.g. Assignment 2"></div>
+    <div class="field"><label>Deadline date <span style="color:#aaa;font-weight:400">(optional)</span></label><input id="f-deadline-date" type="date"></div>
     <div class="modal-footer">
       <button class="btn btn-gray" onclick="closeModal('modal-add-subject')">Cancel</button>
       <button class="btn btn-green" onclick="addSubject()">Add</button>
@@ -455,6 +500,111 @@ function daysSince(iso) {
 function todayISO() {
   return new Date().toISOString().split('T')[0];
 }
+function parseLocalDate(dateStr) {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+function daysUntil(dateStr) {
+  const target = parseLocalDate(dateStr);
+  if (!target) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
+}
+function formatDeadlineLabel(subject) {
+  if (!subject.deadlineDate) return '';
+  const title = subject.deadlineTitle ? esc(subject.deadlineTitle) + ' ' : '';
+  const diff = daysUntil(subject.deadlineDate);
+  const date = fmtDateOnly(subject.deadlineDate);
+  if (diff === null) return `${title}${date}`;
+  if (diff < 0) return `${title}overdue by ${Math.abs(diff)}d`;
+  if (diff === 0) return `${title}due today`;
+  if (diff === 1) return `${title}due tomorrow`;
+  return `${title}due in ${diff}d`;
+}
+function deadlineBadge(subject) {
+  if (!subject.deadlineDate) return '';
+  const diff = daysUntil(subject.deadlineDate);
+  const text = formatDeadlineLabel(subject);
+  if (diff !== null && diff <= 0) return `<span class="deadline-due">${text}</span>`;
+  if (diff !== null && diff <= 7) return `<span class="deadline-soon">${text}</span>`;
+  return `<span class="deadline-ok">${text}</span>`;
+}
+function sortSubjects(subjects, history) {
+  const latestBySubject = {};
+  history.forEach(h => {
+    const current = latestBySubject[h.subjectId];
+    if (!current || new Date(h.at) > new Date(current.at)) latestBySubject[h.subjectId] = h;
+  });
+  return [...subjects].sort((a, b) => {
+    const aDeadline = daysUntil(a.deadlineDate);
+    const bDeadline = daysUntil(b.deadlineDate);
+    if (aDeadline !== null || bDeadline !== null) {
+      if (aDeadline === null) return 1;
+      if (bDeadline === null) return -1;
+      if (aDeadline !== bDeadline) return aDeadline - bDeadline;
+    }
+    const aLast = latestBySubject[a.id]?.at || a.createdAt || '';
+    const bLast = latestBySubject[b.id]?.at || b.createdAt || '';
+    return new Date(bLast || 0) - new Date(aLast || 0);
+  });
+}
+function getFocusSubject(data) {
+  const sorted = sortSubjects(data.subjects, data.history).filter(s => (s.status || 'active') !== 'done');
+  if (sorted.length === 0) return null;
+  const scored = sorted.map(s => {
+    const last = data.history
+      .filter(h => h.subjectId === s.id)
+      .sort((a, b) => new Date(b.at) - new Date(a.at))[0];
+    const inactiveDays = last ? daysSince(last.at) : 999;
+    const deadlineDays = daysUntil(s.deadlineDate);
+    let score = 0;
+    if (deadlineDays !== null) {
+      if (deadlineDays <= 0) score += 200;
+      else if (deadlineDays <= 3) score += 140 - deadlineDays * 10;
+      else if (deadlineDays <= 7) score += 95 - deadlineDays * 4;
+      else score += Math.max(0, 50 - deadlineDays);
+    }
+    if (s.nextTodo) score += 35;
+    if (inactiveDays !== null) score += Math.min(inactiveDays, 14) * 6;
+    if ((s.status || 'active') === 'onhold') score -= 20;
+    return { subject: s, inactiveDays, deadlineDays, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0];
+}
+function getWeeklySummary(data) {
+  const now = new Date();
+  if (now.getDay() !== 1) return null;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const thisMonday = new Date(today);
+  thisMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  const lastMonday = new Date(thisMonday);
+  lastMonday.setDate(thisMonday.getDate() - 7);
+  const lastSunday = new Date(thisMonday);
+  lastSunday.setDate(thisMonday.getDate() - 1);
+  const entries = data.history.filter(h => {
+    const at = new Date(h.at);
+    return at >= lastMonday && at < thisMonday;
+  });
+  const studiedIds = new Set(entries.map(h => h.subjectId));
+  const studiedSubjects = sortSubjects(
+    data.subjects.filter(s => studiedIds.has(s.id)),
+    data.history
+  ).map(s => s.name);
+  const ignoredSubjects = sortSubjects(
+    data.subjects.filter(s => !studiedIds.has(s.id) && (s.status || 'active') !== 'done'),
+    data.history
+  ).map(s => s.name);
+  return {
+    totalSessions: entries.length,
+    studiedSubjects,
+    ignoredSubjects,
+    rangeLabel: `${fmtDateOnly(lastMonday)} to ${fmtDateOnly(lastSunday)}`
+  };
+}
 
 // ══ STATE ══
 let currentSubjectId = null;
@@ -520,6 +670,47 @@ function toast(msg) {
 function renderSubjects() {
   const data = getData();
   const due  = getDueReminders();
+  const orderedSubjects = sortSubjects(data.subjects, data.history);
+
+  const focusCard = document.getElementById('focus-card');
+  const focus = getFocusSubject(data);
+  if (focusCard && focus) {
+    const reason = [];
+    if (focus.deadlineDays !== null) {
+      if (focus.deadlineDays <= 0) reason.push(`deadline ${focus.deadlineDays === 0 ? 'is due today' : `is overdue by ${Math.abs(focus.deadlineDays)} days`}`);
+      else reason.push(`deadline is in ${focus.deadlineDays} days`);
+    }
+    if (focus.inactiveDays !== null) {
+      reason.push(focus.inactiveDays >= 999 ? 'you have not started it yet' : `you have not touched it in ${focus.inactiveDays} days`);
+    }
+    if (focus.subject.nextTodo) reason.push('a next step is already planned');
+    focusCard.innerHTML = `<div class="insight-card focus">
+      <div class="insight-label">Today's Focus</div>
+      <div class="insight-title">${esc(focus.subject.name)}</div>
+      <div class="insight-text">${reason.join(', ')}. ${focus.subject.nextTodo ? `Start with: ${esc(focus.subject.nextTodo)}` : 'Open this subject and log the next concrete step.'}</div>
+      <div class="insight-meta">
+        ${deadlineBadge(focus.subject)}
+        ${focus.inactiveDays !== null ? `<span class="${focus.inactiveDays <= 2 ? 'days-ago days-fresh' : focus.inactiveDays <= 5 ? 'days-ago days-warn' : 'days-ago days-danger'}">${focus.inactiveDays >= 999 ? 'Not started' : `${focus.inactiveDays}d idle`}</span>` : ''}
+        <button class="btn btn-green btn-sm" onclick="openSubject('${focus.subject.id}')">Open Subject</button>
+      </div>
+    </div>`;
+  } else if (focusCard) {
+    focusCard.innerHTML = '';
+  }
+
+  const weekly = getWeeklySummary(data);
+  const weeklyEl = document.getElementById('weekly-summary');
+  if (weekly) {
+    weeklyEl.innerHTML = `<div class="insight-card summary">
+      <div class="insight-label">Weekly Summary</div>
+      <div class="insight-title">Last week: ${weekly.totalSessions} session${weekly.totalSessions === 1 ? '' : 's'}</div>
+      <div class="insight-text">Studied: ${weekly.studiedSubjects.length ? esc(weekly.studiedSubjects.join(', ')) : 'none'}.</div>
+      <div class="insight-text">Ignored: ${weekly.ignoredSubjects.length ? esc(weekly.ignoredSubjects.join(', ')) : 'none'}.</div>
+      <div class="insight-text" style="margin-top:8px;color:#888">${weekly.rangeLabel}</div>
+    </div>`;
+  } else {
+    weeklyEl.innerHTML = '';
+  }
 
   // Revision banner
   const banner = document.getElementById('revision-banner');
@@ -540,16 +731,18 @@ function renderSubjects() {
   }
 
   const list = document.getElementById('subject-list');
-  if (data.subjects.length === 0) {
+  if (orderedSubjects.length === 0) {
     list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">No subjects yet.<br>Add your first subject to get started.</div></div>`;
     return;
   }
 
-  list.innerHTML = data.subjects.map(s => {
+  list.innerHTML = orderedSubjects.map(s => {
     const color = COLORS[s.colorIdx % COLORS.length];
     const sm    = STATUS_META[s.status || 'active'];
     const last  = data.history.filter(h => h.subjectId === s.id).sort((a,b) => new Date(b.at)-new Date(a.at))[0];
     const days  = last ? daysSince(last.at) : null;
+    const deadlineDays = daysUntil(s.deadlineDate);
+    const urgentClass = deadlineDays !== null && deadlineDays <= 7 ? ' urgent' : '';
 
     let daysBadge;
     if      (days === null) daysBadge = `<span class="days-ago days-never">Never</span>`;
@@ -567,12 +760,12 @@ function renderSubjects() {
     const subjectDue = due.filter(h => h.subjectId === s.id).length;
     const dueBadge = subjectDue > 0 ? `<span class="remind-due">🔔 ${subjectDue} due</span>` : '';
 
-    return `<div class="subject-card">
+    return `<div class="subject-card${urgentClass}">
       <div class="subject-card-top">
         <div class="subject-dot" style="background:${color}"></div>
         <div class="subject-name" onclick="openSubject('${s.id}')">${esc(s.name)}</div>
         <button class="subject-status ${sm.cls}" onclick="cycleStatusFromList('${s.id}')" title="Click to change">${sm.label}</button>
-        ${daysBadge} ${dueBadge}
+        ${daysBadge} ${dueBadge} ${deadlineBadge(s)}
       </div>
       ${s.stopped ? `<div class="subject-stopped filled">📍 ${esc(s.stopped)}</div>` : `<div class="subject-stopped" style="color:#bbb">No progress recorded yet</div>`}
       ${s.nextTodo ? `<div class="subject-next">→ ${esc(s.nextTodo)}</div>` : ''}
@@ -590,11 +783,15 @@ function renderSubjects() {
 function addSubject() {
   const name   = document.getElementById('f-subject-name').value.trim();
   const status = document.getElementById('f-subject-status').value;
+  const deadlineTitle = document.getElementById('f-deadline-title').value.trim();
+  const deadlineDate = document.getElementById('f-deadline-date').value;
   if (!name) { toast('Enter a subject name'); return; }
   const data = getData();
-  data.subjects.push({ id:uid(), name, colorIdx:data.subjects.length, status, topics:[], stopped:'', nextTodo:'', createdAt:ts() });
+  data.subjects.push({ id:uid(), name, colorIdx:data.subjects.length, status, topics:[], stopped:'', nextTodo:'', createdAt:ts(), deadlineTitle, deadlineDate });
   saveData(data);
   document.getElementById('f-subject-name').value = '';
+  document.getElementById('f-deadline-title').value = '';
+  document.getElementById('f-deadline-date').value = '';
   closeModal('modal-add-subject');
   renderSubjects();
   buildSidebar();
@@ -645,6 +842,16 @@ function renderSubjectDetail() {
   if (s.nextTodo) { wsNext.style.display='block'; document.getElementById('ws-next-text').textContent = s.nextTodo; }
   else            { wsNext.style.display='none'; }
 
+  document.getElementById('detail-deadline-title').value = s.deadlineTitle || '';
+  document.getElementById('detail-deadline-date').value = s.deadlineDate || '';
+  const deadlineStatus = document.getElementById('detail-deadline-status');
+  if (s.deadlineDate) {
+    const timing = formatDeadlineLabel({ deadlineTitle: '', deadlineDate: s.deadlineDate });
+    deadlineStatus.textContent = `${s.deadlineTitle || 'Deadline'}: ${fmtDateOnly(s.deadlineDate)} (${timing})`;
+  } else {
+    deadlineStatus.textContent = 'No deadline set';
+  }
+
   // Topics
   const topicList = document.getElementById('topic-list');
   const countEl   = document.getElementById('topic-count');
@@ -672,6 +879,32 @@ function renderSubjectDetail() {
 
   // Session log for this subject
   renderSessionLog(s, data);
+}
+
+function saveSubjectDeadline() {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  s.deadlineTitle = document.getElementById('detail-deadline-title').value.trim();
+  s.deadlineDate = document.getElementById('detail-deadline-date').value;
+  saveData(data);
+  renderSubjectDetail();
+  renderSubjects();
+  buildSidebar();
+  toast('Deadline saved');
+}
+
+function clearSubjectDeadline() {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  s.deadlineTitle = '';
+  s.deadlineDate = '';
+  saveData(data);
+  renderSubjectDetail();
+  renderSubjects();
+  buildSidebar();
+  toast('Deadline cleared');
 }
 
 function renderSessionLog(s, data) {
@@ -1057,7 +1290,7 @@ function renderHistory() {
 function buildSidebar() {
   document.getElementById('sb-name').textContent = getName() || 'Student';
   const data = getData();
-  document.getElementById('sb-subjects').innerHTML = data.subjects.map(s =>
+  document.getElementById('sb-subjects').innerHTML = sortSubjects(data.subjects, data.history).map(s =>
     `<button class="sidebar-btn sb-subject-btn ${currentSubjectId===s.id?'active':''}" data-id="${s.id}" onclick="openSubject('${s.id}')">
       <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLORS[s.colorIdx%COLORS.length]};margin-right:8px;flex-shrink:0;vertical-align:middle"></span>${esc(s.name)}
     </button>`).join('');
@@ -1155,6 +1388,16 @@ function showSyncIndicator(msg, type) {
   el._t = setTimeout(() => el.className = '', 3000);
 }
 
+async function findExistingStudyTrailGist(token) {
+  const res = await fetch('https://api.github.com/gists', {
+    headers: { 'Authorization':'token ' + token }
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const gists = await res.json();
+  const match = gists.find(g => g.files && g.files[GIST_FILENAME]);
+  return match ? match.id : '';
+}
+
 async function syncToGist(manual) {
   const token = getGistToken();
   if (!token) return;
@@ -1166,7 +1409,11 @@ async function syncToGist(manual) {
   if (manual) showSyncIndicator('Syncing…', '');
 
   try {
-    const gistId = getGistId();
+    let gistId = getGistId();
+    if (!gistId) {
+      gistId = await findExistingStudyTrailGist(token);
+      if (gistId) localStorage.setItem(GIST_ID_KEY, gistId);
+    }
     let url    = 'https://api.github.com/gists';
     let method = 'POST';
     let body   = { description:'StudyTrail Data', public:false, files:{ [GIST_FILENAME]:{ content: payload } } };
@@ -1207,13 +1454,19 @@ async function syncToGist(manual) {
 
 async function loadFromGist(manual) {
   const token  = getGistToken();
-  const gistId = getGistId();
-  if (!token || !gistId) return;
+  if (!token) return;
 
   if (manual) showSyncIndicator('Loading from Gist…', '');
   setSyncDot('spin');
 
   try {
+    let gistId = getGistId();
+    if (!gistId) {
+      gistId = await findExistingStudyTrailGist(token);
+      if (gistId) localStorage.setItem(GIST_ID_KEY, gistId);
+    }
+    if (!gistId) throw new Error('No StudyTrail gist found');
+
     const res = await fetch('https://api.github.com/gists/' + gistId, {
       headers: { 'Authorization':'token ' + token }
     });
@@ -1275,12 +1528,13 @@ async function saveGistToken() {
     if (!res.ok) throw new Error('Invalid token');
     const user = await res.json();
     localStorage.setItem(GIST_TOKEN_KEY, token);
-    // Clear old gist ID so a new one gets created
-    localStorage.removeItem(GIST_ID_KEY);
+    const existingGistId = await findExistingStudyTrailGist(token);
+    if (existingGistId) localStorage.setItem(GIST_ID_KEY, existingGistId);
+    else localStorage.removeItem(GIST_ID_KEY);
     toast('Connected as ' + user.login + ' ✓');
     updateSyncUI();
-    // Immediately sync up
-    await syncToGist(false);
+    if (existingGistId) await loadFromGist(false);
+    else await syncToGist(false);
     updateSyncUI();
   } catch(e) {
     toast('Could not connect — check your token has gist scope');
