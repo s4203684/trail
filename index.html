@@ -6,7 +6,42 @@
   <title>StudyTrail</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+
+    /* ── Theme variables ── */
+    :root {
+      --bg:        #f5f5f0;
+      --bg2:       #fff;
+      --bg3:       #f9f9f6;
+      --bg4:       #f0f0ec;
+      --border:    #e8e8e4;
+      --border2:   #ddd;
+      --ink:       #1a1a1a;
+      --ink2:      #333;
+      --ink3:      #555;
+      --ink4:      #888;
+      --ink5:      #aaa;
+      --input-bg:  #fafaf8;
+      --modal-bg:  #fff;
+      --card-hover: 0 2px 10px rgba(0,0,0,0.07);
+    }
+    body.dark {
+      --bg:        #141414;
+      --bg2:       #1e1e1e;
+      --bg3:       #252525;
+      --bg4:       #2a2a2a;
+      --border:    #2e2e2e;
+      --border2:   #3a3a3a;
+      --ink:       #f0f0ec;
+      --ink2:      #d8d8d4;
+      --ink3:      #aaa;
+      --ink4:      #777;
+      --ink5:      #555;
+      --input-bg:  #252525;
+      --modal-bg:  #1e1e1e;
+      --card-hover: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; transition: background 0.2s, color 0.2s; }
     .shell { display: flex; min-height: 100vh; }
 
     /* ── Sidebar ── */
@@ -29,24 +64,24 @@
     /* ── Buttons ── */
     .btn { padding:8px 16px; border-radius:7px; border:none; font-size:0.85rem; font-weight:500; cursor:pointer; white-space:nowrap; }
     .btn-green { background:#2d6a4f; color:#fff; } .btn-green:hover { background:#245a42; }
-    .btn-gray  { background:#f0f0ec; color:#333; border:1px solid #e0e0da; } .btn-gray:hover { background:#e4e4e0; }
+    .btn-gray  { background:var(--bg4); color:var(--ink2); border:1px solid var(--border); } .btn-gray:hover { background:var(--border2); }
     .btn-red   { background:#fce8e4; color:#c0392b; border:1px solid #f5c6bf; } .btn-red:hover { background:#f8d5d0; }
-    .btn-ghost { background:none; color:#888; border:1px solid #ddd; } .btn-ghost:hover { background:#f0f0ec; color:#333; }
+    .btn-ghost { background:none; color:var(--ink4); border:1px solid var(--border2); } .btn-ghost:hover { background:var(--bg4); color:var(--ink); }
     .btn-amber { background:#fdf0e0; color:#b5651d; border:1px solid #f5ddb0; } .btn-amber:hover { background:#fae8ca; }
     .btn-sm { padding:5px 10px; font-size:0.78rem; }
 
     /* ── Forms ── */
-    input, textarea, select { width:100%; padding:9px 12px; border:1.5px solid #ddd; border-radius:7px; font-size:0.9rem; font-family:inherit; background:#fafaf8; color:#1a1a1a; }
-    input:focus, textarea:focus, select:focus { outline:none; border-color:#2d6a4f; background:#fff; }
+    input, textarea, select { width:100%; padding:9px 12px; border:1.5px solid var(--border2); border-radius:7px; font-size:0.9rem; font-family:inherit; background:var(--input-bg); color:var(--ink); }
+    input:focus, textarea:focus, select:focus { outline:none; border-color:#2d6a4f; background:var(--bg2); }
     textarea { resize:vertical; min-height:68px; }
-    label { display:block; font-size:0.8rem; font-weight:500; margin-bottom:5px; color:#555; }
+    label { display:block; font-size:0.8rem; font-weight:500; margin-bottom:5px; color:var(--ink3); }
     .field { margin-bottom:14px; }
 
     /* ── Pages ── */
     .page { display:none; } .page.active { display:block; }
 
     /* ── Subject cards (list) ── */
-    .subject-card { background:#fff; border:1px solid #e8e8e4; border-radius:12px; padding:18px 20px; margin-bottom:10px; transition:box-shadow 0.15s; }
+    .subject-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:10px; transition:box-shadow 0.15s; }
     .subject-card:hover { box-shadow:0 2px 10px rgba(0,0,0,0.07); }
     .subject-card.urgent { border-color:#f5c6bf; box-shadow:0 2px 10px rgba(192,57,43,0.08); }
     .subject-card-top { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
@@ -57,7 +92,7 @@
     .ss-active { background:#d8f3dc; color:#2d6a4f; }
     .ss-onhold { background:#fdf0e0; color:#b5651d; }
     .ss-done   { background:#f0f0ec; color:#666; }
-    .subject-stopped { font-size:0.82rem; color:#555; padding:8px 10px; background:#f9f9f6; border-radius:7px; border-left:3px solid #ddd; margin-bottom:8px; line-height:1.5; }
+    .subject-stopped { font-size:0.82rem; color:var(--ink3); padding:8px 10px; background:var(--bg3); border-radius:7px; border-left:3px solid #ddd; margin-bottom:8px; line-height:1.5; }
     .subject-stopped.filled { border-left-color:#2d6a4f; }
     .subject-next { font-size:0.82rem; color:#2d6a4f; font-weight:500; padding:6px 10px; background:#f0faf4; border-radius:7px; margin-bottom:8px; }
     .subject-card-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; flex-wrap:wrap; }
@@ -80,14 +115,14 @@
 
     /* ── Focus + summary cards ── */
     .insight-card {
-      background:#fff;
-      border:1px solid #e8e8e4;
+      background:var(--bg2);
+      border:1px solid var(--border);
       border-radius:12px;
       padding:18px 20px;
       margin-bottom:16px;
     }
-    .insight-card.focus { border-color:#d8f3dc; background:linear-gradient(135deg, #ffffff 0%, #f5fbf7 100%); }
-    .insight-card.summary { background:linear-gradient(135deg, #ffffff 0%, #fbfaf6 100%); }
+    .insight-card.focus { border-color:#d8f3dc; background:linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%); }
+    .insight-card.summary { background:linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%); }
     .insight-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin-bottom:8px; }
     .insight-title { font-size:1.05rem; font-weight:700; margin-bottom:8px; }
     .insight-text { font-size:0.88rem; color:#555; line-height:1.55; }
@@ -101,15 +136,15 @@
     .ws-next strong { display:block; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em; color:#555; margin-bottom:3px; }
 
     /* ── Topics ── */
-    .topic-item { background:#fff; border:1px solid #e8e8e4; border-radius:8px; padding:12px 16px; margin-bottom:7px; display:flex; align-items:center; gap:10px; }
+    .topic-item { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-bottom:7px; display:flex; align-items:center; gap:10px; }
     .topic-name { flex:1; font-size:0.9rem; font-weight:500; }
     .topic-note { font-size:0.76rem; color:#999; font-style:italic; margin-top:2px; }
     select.status-sel { width:auto; padding:4px 26px 4px 9px; font-size:0.78rem; }
 
     /* ── Session entries ── */
     .session-entry {
-      background: #fff;
-      border: 1px solid #e8e8e4;
+      background: var(--bg2);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 16px 18px;
       margin-bottom: 10px;
@@ -138,7 +173,7 @@
       gap: 8px;
       margin-top:12px;
       padding-top:10px;
-      border-top:1px solid #f0f0ec;
+      border-top:1px solid var(--border);
       flex-wrap:wrap;
     }
 
@@ -161,19 +196,19 @@
     /* ── Modal ── */
     .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; align-items:center; justify-content:center; padding:20px; }
     .overlay.open { display:flex; }
-    .modal { background:#fff; border-radius:12px; padding:28px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; }
+    .modal { background:var(--modal-bg); border-radius:12px; padding:28px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; }
     .modal h2 { font-size:1.1rem; margin-bottom:20px; }
-    .modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top:1px solid #eee; }
+    .modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
 
     /* ── Misc ── */
-    .back-btn { background:none; border:none; font-size:0.85rem; color:#888; cursor:pointer; padding:0; margin-bottom:14px; display:flex; align-items:center; gap:4px; }
-    .back-btn:hover { color:#1a1a1a; }
-    .empty { text-align:center; padding:40px 20px; color:#aaa; }
+    .back-btn { background:none; border:none; font-size:0.85rem; color:var(--ink4); cursor:pointer; padding:0; margin-bottom:14px; display:flex; align-items:center; gap:4px; }
+    .back-btn:hover { color:var(--ink); }
+    .empty { text-align:center; padding:40px 20px; color:var(--ink5); }
     .empty-icon { font-size:2rem; margin-bottom:10px; }
     .empty-text { font-size:0.875rem; line-height:1.6; }
     .row { display:flex; gap:10px; align-items:flex-start; }
     .flex1 { flex:1; }
-    .section-head { font-size:0.85rem; font-weight:600; color:#555; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
+    .section-head { font-size:0.85rem; font-weight:600; color:var(--ink3); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
 
     #toast { position:fixed; bottom:24px; right:24px; background:#1a1a1a; color:#fff; padding:11px 18px; border-radius:8px; font-size:0.85rem; opacity:0; transition:opacity 0.25s; z-index:999; pointer-events:none; }
     #sync-status { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1a1a1a; color:#aaa; padding:6px 14px; border-radius:20px; font-size:0.75rem; opacity:0; transition:opacity 0.4s; z-index:998; pointer-events:none; white-space:nowrap; }
@@ -186,6 +221,8 @@
     .sync-dot.spin { animation: spin 1s linear infinite; background:#b5651d; }
     @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
     #toast.show { opacity:1; }
+    .kb-hint-desktop { display:inline; }
+    @media(max-width:760px) { .kb-hint-desktop { display:none; } #kb-hints { display:none; } }
 
     @media(max-width:760px) {
       .shell { display:block; }
@@ -267,12 +304,22 @@
 <body>
 <div class="shell">
 
+  <!-- Add to Home Screen banner (mobile only) -->
+  <div id="a2hs-banner" style="display:none;background:#2d6a4f;color:#fff;padding:10px 16px;font-size:0.82rem;text-align:center;position:relative;z-index:60">
+    📱 Add to Home Screen for full-screen access
+    <button onclick="document.getElementById('a2hs-banner').style.display='none';localStorage.setItem('a2hs_dismissed','1')"
+      style="background:none;border:none;color:#fff;opacity:0.7;font-size:1rem;cursor:pointer;margin-left:10px;padding:0">✕</button>
+  </div>
+
   <!-- SIDEBAR -->
   <nav class="sidebar">
     <div class="sidebar-brand" onclick="showPage('subjects')" title="Go home" style="cursor:pointer">
       StudyTrail
       <span id="sb-name">Student</span>
-      <span id="sb-sync-dot" class="sync-dot" title="Sync status" style="margin-top:6px;display:inline-block"></span>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+        <span id="sb-sync-dot" class="sync-dot" title="Sync status"></span>
+        <span id="sb-streak" style="font-size:0.72rem;color:#4caf50;font-weight:600;display:none"></span>
+      </div>
     </div>
     <div class="sidebar-section">Navigate</div>
     <button class="sidebar-btn" id="nav-home" onclick="showPage('subjects')">🏠 Home</button>
@@ -385,12 +432,32 @@
     <div class="page" id="page-settings">
       <div class="page-title" style="margin-bottom:24px">Settings</div>
 
-      <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:20px 24px;margin-bottom:12px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:12px">
         <div class="field"><label>Your name</label><input id="settings-name" type="text" placeholder="Your name"></div>
         <button class="btn btn-green" onclick="saveName()">Save</button>
       </div>
 
-      <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:20px 24px;margin-bottom:12px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-weight:600;margin-bottom:3px">🌙 Dark Mode</div>
+            <div style="font-size:0.82rem;color:var(--ink4)">Easier on the eyes at night</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:400">
+            <span style="font-size:0.85rem;color:var(--ink4)" id="dark-mode-label">Off</span>
+            <div id="dark-toggle" onclick="toggleDarkMode()" style="
+              width:44px;height:24px;border-radius:12px;background:#ccc;
+              position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0">
+              <div id="dark-toggle-knob" style="
+                width:20px;height:20px;border-radius:50%;background:#fff;
+                position:absolute;top:2px;left:2px;
+                transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:12px">
         <div style="font-weight:600;margin-bottom:6px">&#x1F4BE; Backup &amp; Restore</div>
         <p style="font-size:0.85rem;color:#888;margin-bottom:16px">Export your data as a file to your computer. Import it back anytime to restore everything.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
@@ -402,7 +469,7 @@
       </div>
 
       <!-- GitHub Gist Sync -->
-      <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:20px 24px;margin-bottom:12px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:12px">
         <div style="font-weight:600;margin-bottom:4px">&#x2601; GitHub Gist Sync</div>
         <p style="font-size:0.85rem;color:#888;margin-bottom:14px">Your data syncs automatically to a private GitHub Gist. Works across devices and survives browser resets.</p>
 
@@ -443,7 +510,7 @@
         </div>
       </div>
 
-      <div style="background:#fff;border:1px solid #f5c6bf;border-radius:12px;padding:20px 24px;margin-top:4px">
+      <div style="background:var(--bg2);border:1px solid #f5c6bf;border-radius:12px;padding:20px 24px;margin-top:4px">
         <div style="font-weight:600;color:#c0392b;margin-bottom:6px">Danger Zone</div>
         <p style="font-size:0.85rem;color:#888;margin-bottom:14px">Permanently delete all data. Export a backup first!</p>
         <button class="btn btn-red" onclick="resetAll()">Reset Everything</button>
@@ -562,10 +629,13 @@
 </div>
 
 <div id="toast"></div>
+<div id="kb-hints" style="position:fixed;bottom:8px;right:16px;font-size:0.68rem;color:#aaa;pointer-events:none;z-index:50">
+  <span class="kb-hint-desktop">N = Quick Log &nbsp;·&nbsp; H = Home</span>
+</div>
 <div id="sync-status"></div>
 
 <!-- Floating quick-log button -->
-<button id="fab" onclick="openFabQuickLog()" title="Quick log a session" style="
+<button id="fab" onclick="openFabQuickLog()" title="Quick log a session  [Press N]" style="
   position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
   background:#2d6a4f; color:#fff; border:none; border-radius:50px;
   padding:13px 22px; font-size:0.9rem; font-weight:600;
@@ -1304,7 +1374,7 @@ function saveSession() {
     closeModal('modal-session');
     renderSubjectDetail();
     updateReminderBadge();
-    toast('Session saved ✓');
+    updateStreak(); toast('Session saved ✓');
   }
 }
 
@@ -1429,7 +1499,7 @@ function saveQuick() {
   closeModal('modal-quick');
   renderSubjects();
   updateReminderBadge();
-  toast('Saved ✓');
+  updateStreak(); toast('Saved ✓');
 }
 
 // ══ HISTORY ══
@@ -1473,6 +1543,105 @@ function buildSidebar() {
 
 // ══ SETTINGS ══
 function saveName() { const n = document.getElementById('settings-name').value.trim(); saveName2(n); buildSidebar(); toast('Name saved'); }
+
+// ══ DARK MODE ══
+function isDark() { return localStorage.getItem('st2_dark') === '1'; }
+
+function applyDarkMode(dark) {
+  document.body.classList.toggle('dark', dark);
+  const knob  = document.getElementById('dark-toggle-knob');
+  const track = document.getElementById('dark-toggle');
+  const label = document.getElementById('dark-mode-label');
+  if (knob)  knob.style.transform  = dark ? 'translateX(20px)' : 'translateX(0)';
+  if (track) track.style.background = dark ? '#2d6a4f' : '#ccc';
+  if (label) label.textContent = dark ? 'On' : 'Off';
+}
+
+function toggleDarkMode() {
+  const dark = !isDark();
+  localStorage.setItem('st2_dark', dark ? '1' : '0');
+  applyDarkMode(dark);
+}
+
+// ══ STREAK ══
+function getStreak() {
+  const data = getData();
+  if (!data.history || data.history.length === 0) return 0;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // Collect unique study days
+  const days = new Set();
+  data.history.forEach(h => {
+    if (!h.at) return;
+    const d = new Date(h.at);
+    d.setHours(0,0,0,0);
+    days.add(d.getTime());
+  });
+
+  const sorted = Array.from(days).sort((a,b) => b - a); // newest first
+  if (sorted.length === 0) return 0;
+
+  const mostRecent = new Date(sorted[0]);
+  const diffToday = (today.getTime() - mostRecent.getTime()) / 86400000;
+  // streak only counts if studied today or yesterday
+  if (diffToday > 1) return 0;
+
+  let streak = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = (sorted[i-1] - sorted[i]) / 86400000;
+    if (gap === 1) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function updateStreak() {
+  const streak = getStreak();
+  const el = document.getElementById('sb-streak');
+  if (!el) return;
+  if (streak >= 2) {
+    el.style.display = 'inline';
+    el.textContent = `🔥 ${streak} day streak`;
+  } else if (streak === 1) {
+    el.style.display = 'inline';
+    el.textContent = '✓ Studied today';
+    el.style.color = '#4caf50';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ══ ADD TO HOME SCREEN (iOS Safari) ══
+function checkA2HS() {
+  // Only show on mobile, only if not in standalone mode, only if not dismissed
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const dismissed = localStorage.getItem('a2hs_dismissed');
+  const banner = document.getElementById('a2hs-banner');
+  if (!banner) return;
+  if (isIOS && !isStandalone && !dismissed) {
+    banner.style.display = 'block';
+  }
+}
+
+// ══ KEYBOARD SHORTCUTS ══
+document.addEventListener('keydown', e => {
+  // Don't fire when typing in inputs
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  // Don't fire when a modal is open
+  if (document.querySelector('.overlay.open')) return;
+
+  if (e.key === 'n' || e.key === 'N') {
+    e.preventDefault();
+    openFabQuickLog();
+  }
+  if (e.key === 'h' || e.key === 'H') {
+    e.preventDefault();
+    showPage('subjects');
+  }
+});
 
 // ── Backup status display ──
 function updateBackupStatus() {
@@ -1558,7 +1727,7 @@ function saveFabLog() {
   if (currentSubjectId === subjectId) renderSubjectDetail();
   if (document.getElementById('page-subjects').classList.contains('active')) renderSubjects();
 
-  toast(`Logged for ${s.name} ✓`);
+  updateStreak(); toast(`Logged for ${s.name} ✓`);
 }
 function resetAll() {
   if (!confirm('Delete everything and start fresh?')) return;
@@ -1819,6 +1988,56 @@ async function loadFromGist(manual) {
   }
 }
 
+// Force-loads from a specific gist — used on first connect to guarantee data appears
+async function loadFromGistForced(token, gistId) {
+  try {
+    setSyncDot('spin');
+    const cacheBust = '?t=' + Date.now();
+    const res = await fetch('https://api.github.com/gists/' + gistId + cacheBust, {
+      headers: {
+        'Authorization': 'token ' + token,
+        'Cache-Control': 'no-cache, no-store',
+        'Pragma': 'no-cache'
+      }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    const file = json.files && json.files[GIST_FILENAME];
+    if (!file) throw new Error('StudyTrail data file not found in Gist');
+
+    const rawContent = await readGistFileContent(file);
+    const payload    = JSON.parse(rawContent);
+    const remote     = normalizeData(payload.data || payload);
+
+    if (!remote.subjects || !Array.isArray(remote.subjects)) {
+      throw new Error('Invalid data structure in Gist');
+    }
+
+    // Write to localStorage
+    localStorage.setItem('st2_data', JSON.stringify(remote));
+    if (payload.name) saveName2(payload.name);
+
+    // Full UI refresh
+    buildSidebar();
+    renderSubjects();
+    updateReminderBadge();
+    setSyncDot('ok');
+
+    const count = remote.subjects.length;
+    localStorage.setItem('st2_last_sync', new Date().toLocaleString('en-AU'));
+    toast('Loaded ' + count + ' subject' + (count === 1 ? '' : 's') + ' from Gist ✓');
+    showSyncIndicator('✓ Data loaded from Gist', 'ok');
+    updateSyncUI();
+
+  } catch(e) {
+    setSyncDot('err');
+    const msg = String(e && e.message || 'Unknown error');
+    toast('Could not load Gist data: ' + msg.slice(0, 60));
+    showSyncIndicator('Load failed: ' + msg.slice(0, 40), 'err');
+    console.error('loadFromGistForced error:', e);
+  }
+}
+
 function showSyncSetup() {
   document.getElementById('sync-disconnected').style.display = 'none';
   document.getElementById('sync-setup').style.display = 'block';
@@ -1836,36 +2055,46 @@ async function saveGistToken() {
   const token = document.getElementById('gist-token-input').value.trim();
   if (!token) { toast('Paste your GitHub token first'); return; }
 
-  // Validate token by hitting the API
   showSyncIndicator('Connecting…', '');
+  setSyncDot('spin');
+
   try {
+    // Step 1: Validate token
     const res = await fetch('https://api.github.com/user', {
-      headers: { 'Authorization':'token ' + token }
+      headers: { 'Authorization': 'token ' + token }
     });
-    if (!res.ok) throw new Error('Invalid token');
+    if (!res.ok) throw new Error('Invalid token — HTTP ' + res.status);
     const user = await res.json();
+
+    // Step 2: Store token
     localStorage.setItem(GIST_TOKEN_KEY, token);
+
+    // Step 3: Look for existing Gist
+    showSyncIndicator('Looking for your data…', '');
     const existingGistId = await findExistingStudyTrailGist(token);
-    if (existingGistId) localStorage.setItem(GIST_ID_KEY, existingGistId);
-    else localStorage.removeItem(GIST_ID_KEY);
-    toast('Connected as ' + user.login + ' ✓');
-    updateSyncUI();
+
     if (existingGistId) {
-      // Found existing gist — always force-load all data
-      showSyncIndicator('Loading your data…', '');
-      await loadFromGist(true);
+      // Save gist ID immediately so loadFromGist can use it
+      localStorage.setItem(GIST_ID_KEY, existingGistId);
+      showSyncIndicator('Found your Gist — loading data…', '');
+      updateSyncUI();
+
+      // Step 4: Force-load data regardless of local state
+      await loadFromGistForced(token, existingGistId);
     } else {
-      // No existing gist yet — push current local data up to create one
+      // No existing gist — create one with current local data
+      localStorage.removeItem(GIST_ID_KEY);
       await syncToGist(false);
-      toast('Connected ✓ — data saved to new Gist');
+      toast('Connected as ' + user.login + ' ✓ — new Gist created');
     }
+
     updateSyncUI();
   } catch(e) {
     const msg = String(e && e.message || '');
-    if (msg.includes('401') || msg.includes('Invalid')) {
+    if (msg.includes('401') || msg.toLowerCase().includes('invalid')) {
       toast('Invalid token — make sure it has "gist" scope');
     } else {
-      toast('Could not connect: ' + (msg || 'check your token and internet'));
+      toast('Could not connect: ' + (msg.slice(0, 60) || 'check your token and internet'));
     }
     setSyncDot('err');
     showSyncIndicator('Connection failed', 'err');
@@ -1937,11 +2166,16 @@ function saveData(d) {
     } catch(e) {}
   }
 
+  // Apply dark mode before first render (prevents flash)
+  applyDarkMode(isDark());
+
   buildSidebar();
   renderSubjects();
   updateReminderBadge();
   updateSyncUI();
   updateBackupStatus();
+  updateStreak();
+  checkA2HS();
   const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active');
 
   // 2. If token exists, always try to load from Gist on open
