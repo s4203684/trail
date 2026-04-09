@@ -20,7 +20,7 @@
     .sidebar-remind { display:inline-block; background:#c0392b; color:#fff; font-size:0.65rem; border-radius:10px; padding:1px 6px; margin-left:6px; font-weight:600; vertical-align:middle; }
 
     /* ── Main ── */
-    .main { margin-left:220px; flex:1; padding:32px 36px; max-width:900px; }
+    .main { margin-left:220px; flex:1; padding:32px 36px 90px; max-width:900px; }
 
     /* ── Page header ── */
     .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; gap:12px; flex-wrap:wrap; }
@@ -235,7 +235,7 @@
       /* More section buttons inline after subjects */
       .sidebar > div:last-of-type,
       .sidebar > button { display:inline-flex; flex-shrink:0; }
-      .main { margin-left:0; max-width:none; padding:18px 14px 28px; }
+      .main { margin-left:0; max-width:none; padding:18px 14px 90px; }
       .row { flex-direction:column; }
       .page-header { margin-bottom:18px; }
       .subject-card,
@@ -269,7 +269,13 @@
 
   <!-- SIDEBAR -->
   <nav class="sidebar">
-    <div class="sidebar-brand">StudyTrail<span id="sb-name">Student</span><span id="sb-sync-dot" class="sync-dot" title="Sync status" style="margin-top:6px;display:inline-block"></span></div>
+    <div class="sidebar-brand" onclick="showPage('subjects')" title="Go home" style="cursor:pointer">
+      StudyTrail
+      <span id="sb-name">Student</span>
+      <span id="sb-sync-dot" class="sync-dot" title="Sync status" style="margin-top:6px;display:inline-block"></span>
+    </div>
+    <div class="sidebar-section">Navigate</div>
+    <button class="sidebar-btn" id="nav-home" onclick="showPage('subjects')">🏠 Home</button>
     <div class="sidebar-section">Subjects</div>
     <div id="sb-subjects"></div>
     <div class="sidebar-section">More</div>
@@ -284,7 +290,12 @@
     <div class="page active" id="page-subjects">
       <div class="page-header">
         <div class="page-title">My Subjects</div>
-        <button class="btn btn-green" onclick="openModal('modal-add-subject')">+ Add Subject</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="search" id="subject-search" placeholder="Search subjects…"
+            oninput="filterSubjectCards(this.value)"
+            style="width:180px;padding:7px 12px;font-size:0.85rem">
+          <button class="btn btn-green" onclick="openModal('modal-add-subject')">+ Add Subject</button>
+        </div>
       </div>
       <div id="focus-card"></div>
       <div id="weekly-summary"></div>
@@ -549,6 +560,48 @@
 <div id="toast"></div>
 <div id="sync-status"></div>
 
+<!-- Floating quick-log button -->
+<button id="fab" onclick="openFabQuickLog()" title="Quick log a session" style="
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+  background:#2d6a4f; color:#fff; border:none; border-radius:50px;
+  padding:13px 22px; font-size:0.9rem; font-weight:600;
+  cursor:pointer; box-shadow:0 4px 16px rgba(45,106,79,0.35);
+  z-index:100; display:flex; align-items:center; gap:8px;
+  transition: transform 0.15s, box-shadow 0.15s;
+" onmouseover="this.style.transform='translateX(-50%) scale(1.05)';this.style.boxShadow='0 6px 20px rgba(45,106,79,0.45)'"
+   onmouseout="this.style.transform='translateX(-50%) scale(1)';this.style.boxShadow='0 4px 16px rgba(45,106,79,0.35)'">
+  ✚ Quick Log
+</button>
+
+<!-- Modal: FAB Quick Log -->
+<div class="overlay" id="modal-fab">
+  <div class="modal">
+    <h2>Quick Log</h2>
+    <div class="field">
+      <label>Subject</label>
+      <select id="fab-subject" onchange="fabSubjectChanged()">
+        <option value="">Select subject…</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Where did you stop?</label>
+      <textarea id="fab-stopped" placeholder="e.g. Finished section 3, stopped before the quiz…"></textarea>
+    </div>
+    <div class="field">
+      <label>What to do next?</label>
+      <textarea id="fab-next" placeholder="e.g. Do the practice problems on page 48…"></textarea>
+    </div>
+    <div class="field">
+      <label>Notes <span style="color:#aaa;font-weight:400">(optional)</span></label>
+      <textarea id="fab-notes" style="min-height:54px" placeholder="Anything confusing or to remember…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="closeModal('modal-fab')">Cancel</button>
+      <button class="btn btn-green" onclick="saveFabLog()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══ DATA ══
 function normalizeData(raw) {
@@ -748,8 +801,8 @@ function showPage(name) {
 
   if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
-  if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); }
-  if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); }
+  if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); }
+  if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
 }
 
 // ══ MODALS ══
@@ -1416,6 +1469,93 @@ function buildSidebar() {
 
 // ══ SETTINGS ══
 function saveName() { const n = document.getElementById('settings-name').value.trim(); saveName2(n); buildSidebar(); toast('Name saved'); }
+
+// ── Backup status display ──
+function updateBackupStatus() {
+  const b = localStorage.getItem('st2_backup');
+  const el = document.getElementById('backup-status');
+  if (!el) return;
+  if (b) {
+    try {
+      const parsed = JSON.parse(b);
+      if (parsed.backedUpAt) {
+        el.textContent = 'Auto-backup last saved: ' + new Date(parsed.backedUpAt).toLocaleString('en-AU');
+      }
+    } catch(e) {}
+  }
+}
+
+// ── Subject search filter ──
+function filterSubjectCards(query) {
+  const q = (query || '').toLowerCase().trim();
+  const cards = document.querySelectorAll('#subject-list .subject-card');
+  cards.forEach(card => {
+    const name = card.querySelector('.subject-name');
+    const text = name ? name.textContent.toLowerCase() : '';
+    card.style.display = (!q || text.includes(q)) ? '' : 'none';
+  });
+}
+
+// ── FAB quick log ──
+function openFabQuickLog() {
+  const data = getData();
+  const sel = document.getElementById('fab-subject');
+  sel.innerHTML = '<option value="">Select subject…</option>' +
+    data.subjects.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+
+  // Pre-select current subject if we're on subject page
+  if (currentSubjectId) sel.value = currentSubjectId;
+
+  document.getElementById('fab-stopped').value = '';
+  document.getElementById('fab-next').value = '';
+  document.getElementById('fab-notes').value = '';
+  fabSubjectChanged();
+  openModal('modal-fab');
+}
+
+function fabSubjectChanged() {
+  const id = document.getElementById('fab-subject').value;
+  if (!id) return;
+  const data = getData();
+  const s = data.subjects.find(s => s.id === id);
+  if (!s) return;
+  // Pre-fill with current stopped/next so user sees context
+  if (s.stopped) document.getElementById('fab-stopped').value = s.stopped;
+  if (s.nextTodo) document.getElementById('fab-next').value = s.nextTodo;
+}
+
+function saveFabLog() {
+  const subjectId = document.getElementById('fab-subject').value;
+  const stopped   = document.getElementById('fab-stopped').value.trim();
+  const next      = document.getElementById('fab-next').value.trim();
+  const notes     = document.getElementById('fab-notes').value.trim();
+
+  if (!subjectId) { toast('Select a subject'); return; }
+  if (!stopped && !next) { toast('Fill in at least one field'); return; }
+
+  const data = getData();
+  const s = data.subjects.find(s => s.id === subjectId);
+  if (!s) return;
+
+  if (stopped) s.stopped = stopped;
+  if (next)    s.nextTodo = next;
+
+  data.history.unshift({
+    id: uid(), subjectId, subjectName: s.name,
+    topicId: null, stopped, next, notes,
+    remindOn: null, remindDone: false, at: ts()
+  });
+  if (data.history.length > 300) data.history.length = 300;
+
+  saveData(data);
+  closeModal('modal-fab');
+
+  // Refresh current page if relevant
+  if (currentSubjectId === subjectId) renderSubjectDetail();
+  if (document.getElementById('page-subjects').classList.contains('active')) renderSubjects();
+
+  toast(`Logged for ${s.name} ✓`);
+}
 function resetAll() {
   if (!confirm('Delete everything and start fresh?')) return;
   if (!confirm('Are you sure? Export a backup first if you want to keep your data.')) return;
@@ -1750,6 +1890,8 @@ function saveData(d) {
   renderSubjects();
   updateReminderBadge();
   updateSyncUI();
+  updateBackupStatus();
+  const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active');
 
   // 2. If connected to Gist, load latest data on open
   if (getGistToken() && getGistId()) {
