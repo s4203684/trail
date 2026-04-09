@@ -491,7 +491,7 @@
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
             <span class="sync-dot ok"></span>
             <span style="font-size:0.875rem;font-weight:500;color:#2d6a4f">Connected</span>
-            <span id="sync-gist-link" style="font-size:0.75rem;color:#aaa"></span>
+            <span id="sync-gist-link" style="display:none"></span>
           </div>
           <div id="sync-last-time" style="font-size:0.78rem;color:#aaa;margin-bottom:14px"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1850,10 +1850,12 @@ async function findExistingStudyTrailGist(token) {
   return '';
 }
 
-async function readGistFileContent(file) {
+async function readGistFileContent(file, token) {
   if (file && !file.truncated && typeof file.content === 'string') return file.content;
   if (!file || !file.raw_url) throw new Error('File not found in gist');
-  const res = await fetch(file.raw_url);
+  const res = await fetch(file.raw_url, {
+    headers: token ? githubHeaders(token) : undefined
+  });
   if (!res.ok) throw new Error('Could not fetch gist content');
   return await res.text();
 }
@@ -1939,7 +1941,7 @@ async function loadFromGist(manual) {
     const file = json.files && json.files[GIST_FILENAME];
     if (!file) throw new Error('File not found in gist');
 
-    const rawContent = await readGistFileContent(file);
+    const rawContent = await readGistFileContent(file, token);
     const payload    = JSON.parse(rawContent);
     const remote     = normalizeData(payload.data || payload);
 
@@ -2011,7 +2013,7 @@ async function loadFromGistForced(token, gistId) {
     const file = json.files && json.files[GIST_FILENAME];
     if (!file) throw new Error('StudyTrail data file not found in Gist');
 
-    const rawContent = await readGistFileContent(file);
+    const rawContent = await readGistFileContent(file, token);
     const payload    = JSON.parse(rawContent);
     const remote     = normalizeData(payload.data || payload);
 
@@ -2143,7 +2145,8 @@ function updateSyncUI() {
     const lastSync = localStorage.getItem('st2_last_sync');
     document.getElementById('sync-last-time').textContent = lastSync ? 'Last synced: ' + lastSync : 'Not synced yet';
     const linkEl = document.getElementById('sync-gist-link');
-    linkEl.textContent = '';
+    if (gistId) linkEl.innerHTML = '<a href="https://gist.github.com/' + gistId + '" target="_blank" style="color:#2d6a4f">View Gist ↗</a>';
+    else linkEl.textContent = '';
     setSyncDot(lastSync ? 'ok' : 'off');
   } else {
     conn.style.display  = 'none';
