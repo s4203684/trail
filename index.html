@@ -70,6 +70,27 @@
     .btn-amber { background:#fdf0e0; color:#b5651d; border:1px solid #f5ddb0; } .btn-amber:hover { background:#fae8ca; }
     .btn-sm { padding:5px 10px; font-size:0.78rem; }
 
+    .btn { transition:transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.15s ease; }
+    .btn:hover { transform:translateY(-1px); }
+    .subject-card, .session-entry, .insight-card, .ws-card, .topic-item { transition:transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
+    .subject-card:hover, .session-entry:hover, .insight-card:hover { transform:translateY(-1px); }
+    .smart-pill { display:inline-flex; align-items:center; gap:6px; font-size:0.72rem; padding:4px 10px; border-radius:999px; font-weight:600; }
+    .smart-danger { background:#fce8e4; color:#c0392b; }
+    .smart-warn { background:#fdf0e0; color:#b5651d; }
+    .smart-good { background:#d8f3dc; color:#2d6a4f; }
+    .smart-info { background:#eef5ff; color:#1d5f8a; }
+    .progress-row { display:flex; align-items:center; gap:10px; margin-top:8px; }
+    .progress-track { flex:1; height:8px; background:var(--bg4); border-radius:999px; overflow:hidden; }
+    .progress-fill { height:100%; background:#2d6a4f; border-radius:999px; transition:width 0.25s ease; }
+    .stat-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; margin-top:12px; }
+    .stat-chip { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:12px; }
+    .stat-chip strong { display:block; font-size:1rem; margin-bottom:3px; }
+    .smart-banner { background:linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+    .smart-banner-title { font-weight:700; margin-bottom:6px; }
+    .smart-banner-text { font-size:0.86rem; color:var(--ink3); line-height:1.5; }
+    .action-row { display:flex; gap:6px; flex-wrap:wrap; }
+    .fab-subject-log { display:none; }
+
     /* ── Forms ── */
     input, textarea, select { width:100%; padding:9px 12px; border:1.5px solid var(--border2); border-radius:7px; font-size:0.9rem; font-family:inherit; background:var(--input-bg); color:var(--ink); }
     input:focus, textarea:focus, select:focus { outline:none; border-color:#2d6a4f; background:var(--bg2); }
@@ -293,11 +314,17 @@
       .modal { padding:18px 14px; }
       .modal-footer { flex-wrap:wrap; }
       .modal-footer .btn { width:100%; }
-      .btn { width:100%; text-align:center; }
-      .btn.btn-sm { width:auto; }
+      .btn { width:100%; text-align:center; min-height:44px; font-size:0.9rem; }
+      .btn.btn-sm { width:auto; min-height:40px; }
       .subject-card-footer { align-items:stretch; }
       .subject-card-footer > div:last-child { width:100%; }
       .subject-card-footer > div:last-child .btn { width:100%; }
+      .action-row { width:100%; }
+      .action-row .btn { flex:1; }
+      .stat-grid { grid-template-columns:1fr; }
+      #fab { bottom:18px; width:calc(100% - 24px); left:12px; right:12px; transform:none; justify-content:center; border-radius:14px; }
+      #fab-subject-log { display:block; position:fixed; bottom:78px; left:12px; right:12px; z-index:99; box-shadow:0 4px 16px rgba(45,106,79,0.35); }
+      body:not(.on-subject-page) #fab-subject-log { display:none; }
     }
   </style>
 </head>
@@ -345,8 +372,10 @@
         </div>
       </div>
       <div id="focus-card"></div>
+      <div id="session-intelligence"></div>
       <div id="weekly-summary"></div>
       <div id="revision-banner"></div>
+      <div id="backup-reminder"></div>
       <div id="subject-list"></div>
     </div>
 
@@ -633,6 +662,7 @@
   <span class="kb-hint-desktop">N = Quick Log &nbsp;·&nbsp; H = Home</span>
 </div>
 <div id="sync-status"></div>
+<button id="fab-subject-log" class="btn btn-green fab-subject-log" onclick="openCheckin()">+ Log Session</button>
 
 <!-- Floating quick-log button -->
 <button id="fab" onclick="openFabQuickLog()" title="Quick log a session  [Press N]" style="
@@ -867,6 +897,88 @@ function updateReminderBadge() {
   else           { el.style.display = 'none'; }
 }
 
+
+function hasStudiedToday() {
+  const data = getData();
+  const today = todayISO();
+  return (data.history || []).some(h => h.at && h.at.slice(0,10) === today);
+}
+
+function getSessionIntelligence(data) {
+  const history = Array.isArray(data.history) ? data.history : [];
+  const subjects = Array.isArray(data.subjects) ? data.subjects : [];
+  const streak = getStreak();
+  const last = history.length ? [...history].sort((a,b) => new Date(b.at) - new Date(a.at))[0] : null;
+  const counts = {};
+  history.forEach(h => { if (h.subjectId) counts[h.subjectId] = (counts[h.subjectId] || 0) + 1; });
+  let mostActive = null;
+  for (const s of subjects) {
+    const count = counts[s.id] || 0;
+    if (!mostActive || count > mostActive.count) mostActive = { name: s.name, count };
+  }
+  return {
+    streak,
+    studiedToday: hasStudiedToday(),
+    lastSession: last,
+    lastSessionDays: last ? daysSince(last.at) : null,
+    mostActive: mostActive && mostActive.count > 0 ? mostActive : null,
+    totalSessions: history.length
+  };
+}
+
+function renderSessionIntelligence(data) {
+  const el = document.getElementById('session-intelligence');
+  if (!el) return;
+  const info = getSessionIntelligence(data);
+  if (!info.totalSessions) {
+    el.innerHTML = `<div class="smart-banner"><div class="smart-banner-title">✨ Make the app feel alive</div><div class="smart-banner-text">Start by logging your first session. StudyTrail will then show streaks, strongest subject, and what needs attention next.</div></div>`;
+    return;
+  }
+  const streakText = info.streak > 1 ? `${info.streak} day streak 🔥` : (info.studiedToday ? 'Studied today ✅' : 'No study yet today');
+  const lastText = info.lastSessionDays === null ? 'No sessions yet' : info.lastSessionDays === 0 ? 'Last session: today' : `Last session: ${info.lastSessionDays} day${info.lastSessionDays===1?'':'s'} ago`;
+  const focusText = info.mostActive ? `${info.mostActive.name} · ${info.mostActive.count} session${info.mostActive.count===1?'':'s'}` : 'No strongest subject yet';
+  const bannerText = info.streak > 0 && !info.studiedToday ? `Don’t break your ${info.streak}-day streak.` : 'Keep the momentum going.';
+  el.innerHTML = `<div class="insight-card summary">
+    <div class="insight-label">🧾 Session Intelligence</div>
+    <div class="insight-title">Your study pattern</div>
+    <div class="smart-banner-text">${bannerText}</div>
+    <div class="stat-grid">
+      <div class="stat-chip"><strong>${streakText}</strong><span style="font-size:0.78rem;color:var(--ink4)">Zero-day tracker</span></div>
+      <div class="stat-chip"><strong>${lastText}</strong><span style="font-size:0.78rem;color:var(--ink4)">${info.lastSession ? esc(info.lastSession.subjectName) : 'Ready when you are'}</span></div>
+      <div class="stat-chip"><strong>${focusText}</strong><span style="font-size:0.78rem;color:var(--ink4)">Most active subject</span></div>
+    </div>
+  </div>`;
+}
+
+function renderBackupReminder() {
+  const el = document.getElementById('backup-reminder');
+  if (!el) return;
+  const lastExport = localStorage.getItem('st2_last_export');
+  const backupRaw = localStorage.getItem('st2_backup');
+  let backupAge = null;
+  if (backupRaw) {
+    try {
+      const parsed = JSON.parse(backupRaw);
+      if (parsed.backedUpAt) backupAge = Math.floor((Date.now() - new Date(parsed.backedUpAt).getTime()) / 86400000);
+    } catch(e) {}
+  }
+  const noExport = !lastExport;
+  const exportOld = lastExport ? ((Date.now() - new Date(lastExport).getTime()) / 86400000) >= 5 : false;
+  if (!noExport && !exportOld && !(backupAge !== null && backupAge >= 3)) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = `<div class="smart-banner">
+    <div class="smart-banner-title">💾 Download a backup</div>
+    <div class="smart-banner-text">You already know sync can fail sometimes. Keep a fresh backup file on your laptop or phone.</div>
+    <div class="insight-meta"><button class="btn btn-green btn-sm" onclick="exportData()">Download backup</button><button class="btn btn-ghost btn-sm" onclick="showPage('settings')">Open settings</button></div>
+  </div>`;
+}
+
+function updateSubjectPageFab() {
+  document.body.classList.toggle('on-subject-page', !!(currentSubjectId && document.getElementById('page-subject') && document.getElementById('page-subject').classList.contains('active')));
+}
+
 // ══ NAV ══
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -877,6 +989,7 @@ function showPage(name) {
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
   if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); }
   if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
+  updateSubjectPageFab();
 }
 
 // ══ MODALS ══
@@ -903,20 +1016,22 @@ function renderSubjects() {
   const data = getData();
   const due  = getDueReminders();
   const orderedSubjects = sortSubjects(data.subjects, data.history);
+  renderSessionIntelligence(data);
+  renderBackupReminder();
 
   const focusCard = document.getElementById('focus-card');
   const focus = getFocusSubject(data);
   if (focusCard && focus) {
     const reasons = [];
     if (focus.deadlineDays !== null) {
-      if (focus.deadlineDays <= 0) reasons.push(focus.deadlineDays === 0 ? '⚠ Deadline is today' : `⚠ Deadline overdue by ${Math.abs(focus.deadlineDays)} day${Math.abs(focus.deadlineDays)===1?'':'s'}`);
-      else if (focus.deadlineDays <= 3) reasons.push(`⚠ Deadline in ${focus.deadlineDays} day${focus.deadlineDays===1?'':'s'}`);
+      if (focus.deadlineDays <= 0) reasons.push(focus.deadlineDays === 0 ? '🚨 Focus now — deadline is today' : `🚨 Focus now — overdue by ${Math.abs(focus.deadlineDays)} day${Math.abs(focus.deadlineDays)===1?'':'s'}`);
+      else if (focus.deadlineDays <= 3) reasons.push(`🚨 Focus now — deadline in ${focus.deadlineDays} day${focus.deadlineDays===1?'':'s'}`);
       else reasons.push(`Deadline in ${focus.deadlineDays} days`);
     }
     if (focus.inactiveDays >= 999) reasons.push('You have not started this yet');
-    else if (focus.inactiveDays >= 5) reasons.push(`Not studied in ${focus.inactiveDays} days`);
+    else if (focus.inactiveDays >= 3) reasons.push(`⚠ You’re losing progress here — ${focus.inactiveDays} days idle`);
     const actionText = focus.subject.nextTodo
-      ? `Next step: <strong>${esc(focus.subject.nextTodo)}</strong>`
+      ? `👉 Continue from here: <strong>${esc(focus.subject.nextTodo)}</strong>`
       : 'Open this subject and log what to do next.';
     focusCard.innerHTML = `<div class="insight-card focus">
       <div class="insight-label">📌 Suggested Focus</div>
@@ -951,16 +1066,25 @@ function renderSubjects() {
 
   // Revision banner
   const banner = document.getElementById('revision-banner');
-  if (due.length > 0) {
+  const today = todayISO();
+  const overdueCount = due.filter(h => h.remindOn && h.remindOn < today).length;
+  const dueTodayCount = due.filter(h => h.remindOn === today).length;
+  const upcomingCount = (data.history || []).filter(h => h.remindOn && h.remindOn > today && !h.remindDone).length;
+  const streak = getStreak();
+  const streakNudge = streak > 0 && !hasStudiedToday() ? `<div class="revision-banner-item">🔥 Don’t break your ${streak}-day streak today.</div>` : '';
+  if (due.length > 0 || streakNudge) {
     banner.innerHTML = `<div class="revision-banner">
-      <div class="revision-banner-icon">🔔</div>
+      <div class="revision-banner-icon">${overdueCount > 0 ? '🚨' : dueTodayCount > 0 ? '🔔' : '✅'}</div>
       <div>
-        <div class="revision-banner-title">${due.length} session${due.length>1?'s':''} due for revision</div>
-        ${due.slice(0,3).map(h => `<div class="revision-banner-item">
-          <strong>${esc(h.subjectName)}</strong> — ${esc(h.stopped || h.notes || 'Session on ' + fmtDateOnly(h.at))}
-          <a onclick="markReminderDone('${h.id}')"> Mark done</a> ·
-          <a onclick="showPage('reminders')">View all</a>
-        </div>`).join('')}
+        <div class="revision-banner-title">${overdueCount > 0 ? `${overdueCount} overdue` : dueTodayCount > 0 ? `${dueTodayCount} due today` : upcomingCount > 0 ? `${upcomingCount} upcoming revision${upcomingCount===1?'':'s'}` : 'Keep the streak alive'}</div>
+        <div class="insight-meta" style="margin-top:8px;margin-bottom:6px">
+          ${overdueCount ? `<span class="smart-pill smart-danger">${overdueCount} overdue</span>` : ''}
+          ${dueTodayCount ? `<span class="smart-pill smart-warn">${dueTodayCount} due today</span>` : ''}
+          ${upcomingCount ? `<span class="smart-pill smart-good">${upcomingCount} upcoming</span>` : ''}
+          ${streak ? `<span class="smart-pill smart-info">🔥 ${streak} day streak</span>` : ''}
+        </div>
+        ${due.slice(0,3).map(h => `<div class="revision-banner-item"><strong>${esc(h.subjectName)}</strong> — ${esc(h.stopped || h.notes || 'Session on ' + fmtDateOnly(h.at))} <a onclick="markReminderDone('${h.id}')">Mark done</a> · <a onclick="showPage('reminders')">Review</a></div>`).join('')}
+        ${streakNudge}
       </div>
     </div>`;
   } else {
@@ -969,7 +1093,7 @@ function renderSubjects() {
 
   const list = document.getElementById('subject-list');
   if (orderedSubjects.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">No subjects yet.<br>Add your first subject to get started.</div></div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">Start by adding your first subject.<br>Then log one session so StudyTrail can guide what to focus on next.</div></div>`;
     return;
   }
 
@@ -991,11 +1115,16 @@ function renderSubjects() {
     const total = s.topics.length;
     const done  = s.topics.filter(t => t.status==='done').length;
     const stuck = s.topics.filter(t => t.status==='stuck').length;
-    const topicLine = total > 0 ? `${done}/${total} topics done${stuck>0?` · <span style="color:#c0392b">${stuck} stuck</span>`:''}` : '';
+    const topicLine = total > 0 ? `${done}/${total} topics done${stuck>0?` · <span style="color:#c0392b">${stuck} stuck</span>`:''}` : 'No topics yet';
+    const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
     // Count due reminders for this subject
     const subjectDue = due.filter(h => h.subjectId === s.id).length;
     const dueBadge = subjectDue > 0 ? `<span class="remind-due">🔔 ${subjectDue} due</span>` : '';
+    const smartPills = [];
+    if (days !== null && days >= 3) smartPills.push(`<span class="smart-pill smart-danger">⚠ Losing progress</span>`);
+    if (s.nextTodo) smartPills.push(`<span class="smart-pill smart-good">👉 Continue from here</span>`);
+    if (deadlineDays !== null && deadlineDays <= 3) smartPills.push(`<span class="smart-pill smart-warn">🚨 Focus now</span>`);
 
     return `<div class="subject-card${urgentClass}">
       <div class="subject-card-top">
@@ -1004,13 +1133,16 @@ function renderSubjects() {
         <button class="subject-status ${sm.cls}" onclick="cycleStatusFromList('${s.id}')" title="Click to change">${sm.label}</button>
         ${daysBadge} ${dueBadge} ${deadlineBadge(s)}
       </div>
-      ${s.stopped ? `<div class="subject-stopped filled">📍 ${esc(s.stopped)}</div>` : `<div class="subject-stopped" style="color:#bbb">No progress recorded yet</div>`}
-      ${s.nextTodo ? `<div class="subject-next">→ ${esc(s.nextTodo)}</div>` : ''}
+      ${smartPills.length ? `<div class="insight-meta" style="margin:0 0 8px 0">${smartPills.join('')}</div>` : ''}
+      ${s.stopped ? `<div class="subject-stopped filled">📍 ${esc(s.stopped)}</div>` : `<div class="subject-stopped" style="color:#bbb">No progress recorded yet — log one session to make this subject smarter.</div>`}
+      ${s.nextTodo ? `<div class="subject-next">→ ${esc(s.nextTodo)}</div>` : `<div class="subject-next" style="background:var(--bg3);color:var(--ink4)">→ Add a next step to make continuing easier</div>`}
+      <div class="progress-row"><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div><div style="font-size:0.75rem;color:#888;min-width:44px;text-align:right">${progress}%</div></div>
       <div class="subject-card-footer">
         <div style="font-size:0.75rem;color:#aaa">${topicLine}</div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick="openSubject('${s.id}')">Open →</button>
-          <button class="btn btn-green btn-sm" onclick="openQuickUpdate('${s.id}')">Quick Update</button>
+        <div class="action-row">
+          <button class="btn btn-ghost btn-sm" onclick="openSubject('${s.id}')">▶ Continue</button>
+          <button class="btn btn-green btn-sm" onclick="quickLogForSubject('${s.id}')">➕ Log session</button>
+          <button class="btn btn-amber btn-sm" onclick="reviewSubject('${s.id}')">🔁 Review</button>
         </div>
       </div>
     </div>`;
@@ -1059,6 +1191,25 @@ function openSubject(id) {
   showPage('subject');
   renderSubjectDetail();
   buildSidebar();
+}
+
+
+function quickLogForSubject(id) {
+  currentSubjectId = id;
+  openCheckin();
+}
+
+function reviewSubject(id) {
+  const data = getData();
+  const today = todayISO();
+  const target = (data.history || []).find(h => h.subjectId === id && h.remindOn && !h.remindDone && h.remindOn <= today);
+  if (target) {
+    markReminderDone(target.id);
+    openSubject(id);
+    toast('Marked latest due reminder as revised ✓');
+    return;
+  }
+  openSubject(id);
 }
 
 function renderSubjectDetail() {
@@ -1347,6 +1498,8 @@ function saveSession() {
     saveData(data);
     closeModal('modal-session');
     renderSubjectDetail();
+    renderSubjects();
+    buildSidebar();
     updateReminderBadge();
     toast('Session updated ✓');
   } else {
@@ -1374,6 +1527,8 @@ function saveSession() {
     closeModal('modal-session');
     renderSubjectDetail();
     updateReminderBadge();
+    renderSubjects();
+    buildSidebar();
     updateStreak(); toast('Session saved ✓');
   }
 }
@@ -1384,6 +1539,8 @@ function deleteSession(sessionId) {
   data.history = data.history.filter(h => h.id !== sessionId);
   saveData(data);
   renderSubjectDetail();
+  renderSubjects();
+  buildSidebar();
   updateReminderBadge();
   toast('Session deleted');
 }
@@ -1396,6 +1553,7 @@ function markReminderDone(sessionId) {
   h.remindDone = true;
   saveData(data);
   renderSubjects();
+  buildSidebar();
   updateReminderBadge();
   if (document.getElementById('page-reminders').classList.contains('active')) renderReminders();
   if (document.getElementById('page-subject').classList.contains('active')) renderSubjectDetail();
@@ -1413,10 +1571,12 @@ function renderReminders() {
   const done     = data.history.filter(h => h.remindDone).sort((a,b)=>new Date(b.at)-new Date(a.at)).slice(0,10);
 
   if (overdue.length === 0 && dueToday.length === 0 && upcoming.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-text">No reminders set.<br>When you log a session, tick "Set a reminder" to get reminded to revise it later.</div></div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div><div class="empty-text">No reminders set yet.<br>Log a session and add a reminder so revision appears here automatically.</div></div>`;
     if (done.length > 0) list.innerHTML += renderDoneReminders(done);
     return;
   }
+
+  let html = `<div class="insight-card summary"><div class="insight-label">Reminder snapshot</div><div class="insight-title">${overdue.length} overdue · ${dueToday.length} due today · ${upcoming.length} upcoming</div><div class="insight-meta"><span class="smart-pill smart-danger">${overdue.length} overdue</span><span class="smart-pill smart-warn">${dueToday.length} today</span><span class="smart-pill smart-good">${upcoming.length} upcoming</span></div></div>`;
 
   const renderEntry = (h, badge) => `
     <div class="session-entry ${h.remindOn <= today ? 'reminder-due' : 'has-reminder'}" style="margin-bottom:10px">
@@ -1432,8 +1592,6 @@ function renderReminders() {
         <button class="btn btn-amber btn-sm" onclick="markReminderDone('${h.id}')">✓ Mark Revised</button>
       </div>
     </div>`;
-
-  let html = '';
 
   if (overdue.length > 0) {
     html += `<div style="font-weight:600;color:#c0392b;margin-bottom:10px">⚠ Overdue (${overdue.length})</div>`;
@@ -1499,6 +1657,7 @@ function saveQuick() {
   closeModal('modal-quick');
   renderSubjects();
   updateReminderBadge();
+  buildSidebar();
   updateStreak(); toast('Saved ✓');
 }
 
@@ -1514,7 +1673,7 @@ function renderHistory() {
   const list  = document.getElementById('history-list');
 
   if (entries.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No history yet.</div></div>`;
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No history yet.<br>Once you log sessions, your progress story will show up here.</div></div>`;
     return;
   }
 
@@ -1535,10 +1694,14 @@ function renderHistory() {
 function buildSidebar() {
   document.getElementById('sb-name').textContent = getName() || 'Student';
   const data = getData();
+  const due = getDueReminders().length;
   document.getElementById('sb-subjects').innerHTML = sortSubjects(data.subjects, data.history).map(s =>
     `<button class="sidebar-btn sb-subject-btn ${currentSubjectId===s.id?'active':''}" data-id="${s.id}" onclick="openSubject('${s.id}')">
       <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLORS[s.colorIdx%COLORS.length]};margin-right:8px;flex-shrink:0;vertical-align:middle"></span>${esc(s.name)}
     </button>`).join('');
+  const remindBtn = document.getElementById('sb-remind-count');
+  if (remindBtn) remindBtn.title = due > 0 ? `${due} revision reminder${due===1?'':'s'} waiting` : 'No pending reminders';
+  updateSubjectPageFab();
 }
 
 // ══ SETTINGS ══
@@ -1601,13 +1764,13 @@ function updateStreak() {
   const streak = getStreak();
   const el = document.getElementById('sb-streak');
   if (!el) return;
+  el.style.color = '#4caf50';
   if (streak >= 2) {
     el.style.display = 'inline';
     el.textContent = `🔥 ${streak} day streak`;
   } else if (streak === 1) {
     el.style.display = 'inline';
-    el.textContent = '✓ Studied today';
-    el.style.color = '#4caf50';
+    el.textContent = hasStudiedToday() ? '✓ Studied today' : '🔥 1 day streak';
   } else {
     el.style.display = 'none';
   }
@@ -1652,7 +1815,9 @@ function updateBackupStatus() {
     try {
       const parsed = JSON.parse(b);
       if (parsed.backedUpAt) {
-        el.textContent = 'Auto-backup last saved: ' + new Date(parsed.backedUpAt).toLocaleString('en-AU');
+        const lastExport = localStorage.getItem('st2_last_export');
+        const exportText = lastExport ? ' · Last download: ' + new Date(lastExport).toLocaleString('en-AU') : ' · No manual download yet';
+        el.textContent = 'Auto-backup last saved: ' + new Date(parsed.backedUpAt).toLocaleString('en-AU') + exportText;
       }
     } catch(e) {}
   }
@@ -1727,6 +1892,7 @@ function saveFabLog() {
   if (currentSubjectId === subjectId) renderSubjectDetail();
   if (document.getElementById('page-subjects').classList.contains('active')) renderSubjects();
 
+  buildSidebar();
   updateStreak(); toast(`Logged for ${s.name} ✓`);
 }
 function resetAll() {
@@ -1750,6 +1916,9 @@ function exportData() {
   a.download = 'studytrail-backup-' + new Date().toISOString().slice(0,10) + '.json';
   a.click();
   URL.revokeObjectURL(url);
+  localStorage.setItem('st2_last_export', ts());
+  updateBackupStatus();
+  renderBackupReminder();
   toast('Backup downloaded ✓');
 }
 
@@ -1773,6 +1942,7 @@ function importData(event) {
       toast('Data restored ✓');
       buildSidebar();
       renderSubjects();
+      buildSidebar();
       updateReminderBadge();
     } catch(err) {
       toast('Could not read file — make sure it is a StudyTrail backup');
@@ -1814,10 +1984,11 @@ function setSyncDot(state) {
 function showSyncIndicator(msg, type) {
   const el = document.getElementById('sync-status');
   if (!el) return;
-  el.textContent = msg;
+  const dotClass = type === 'ok' ? 'ok' : type === 'err' ? 'err' : 'spin';
+  el.innerHTML = `<span class="sync-dot ${dotClass}"></span>${esc(msg)}`;
   el.className = 'show ' + (type || '');
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.className = '', 3000);
+  el._t = setTimeout(() => el.className = '', type === 'err' ? 4200 : 3000);
 }
 
 function githubHeaders(token, extra) {
@@ -1966,6 +2137,7 @@ async function loadFromGist(manual) {
       // Now render with the newly written data
       buildSidebar();
       renderSubjects();
+      buildSidebar();
       updateReminderBadge();
       updateSyncUI();
       const subjectCount = (remote.subjects || []).length;
@@ -2143,7 +2315,7 @@ function updateSyncUI() {
     conn.style.display  = 'block';
     disc.style.display  = 'none';
     const lastSync = localStorage.getItem('st2_last_sync');
-    document.getElementById('sync-last-time').textContent = lastSync ? 'Last synced: ' + lastSync : 'Not synced yet';
+    document.getElementById('sync-last-time').textContent = lastSync ? 'Last synced: ' + lastSync + ' · Sync ready across devices' : 'Not synced yet';
     const linkEl = document.getElementById('sync-gist-link');
     if (gistId) linkEl.innerHTML = '<a href="https://gist.github.com/' + gistId + '" target="_blank" style="color:#2d6a4f">View Gist ↗</a>';
     else linkEl.textContent = '';
@@ -2193,6 +2365,7 @@ function saveData(d) {
   updateSyncUI();
   updateBackupStatus();
   updateStreak();
+  updateSubjectPageFab();
   checkA2HS();
   const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active');
 
