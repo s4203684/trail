@@ -1853,11 +1853,18 @@ async function findExistingStudyTrailGist(token) {
   return '';
 }
 
-async function readGistFileContent(file) {
+async function readGistFileContent(file, token) {
   if (file && !file.truncated && typeof file.content === 'string') return file.content;
   if (!file || !file.raw_url) throw new Error('File not found in gist');
-  const res = await fetch(file.raw_url);
-  if (!res.ok) throw new Error('Could not fetch gist content');
+
+  const res = await fetch(file.raw_url, {
+    headers: githubHeaders(token, {
+      'Cache-Control': 'no-cache, no-store',
+      'Pragma': 'no-cache'
+    })
+  });
+
+  if (!res.ok) throw new Error(await readGitHubError(res));
   return await res.text();
 }
 
@@ -1945,7 +1952,7 @@ async function loadFromGist(manual) {
     const file = json.files && json.files[GIST_FILENAME];
     if (!file) throw new Error('File not found in gist');
 
-    const rawContent = await readGistFileContent(file);
+    const rawContent = await readGistFileContent(file, token);
     const payload    = JSON.parse(rawContent);
     const remote     = normalizeData(payload.data || payload);
 
@@ -2020,7 +2027,7 @@ async function loadFromGistForced(token, gistId) {
     const file = json.files && json.files[GIST_FILENAME];
     if (!file) throw new Error('StudyTrail data file not found in Gist');
 
-    const rawContent = await readGistFileContent(file);
+    const rawContent = await readGistFileContent(file, token);
     const payload    = JSON.parse(rawContent);
     const remote     = normalizeData(payload.data || payload);
 
@@ -2155,8 +2162,7 @@ function updateSyncUI() {
     const lastSync = localStorage.getItem('st2_last_sync');
     document.getElementById('sync-last-time').textContent = lastSync ? 'Last synced: ' + lastSync : 'Not synced yet';
     const linkEl = document.getElementById('sync-gist-link');
-    if (gistId) linkEl.innerHTML = '<a href="https://gist.github.com/' + gistId + '" target="_blank" style="color:#2d6a4f">View Gist ↗</a>';
-    else linkEl.textContent = '';
+    if (linkEl) linkEl.textContent = '';
     setSyncDot(lastSync ? 'ok' : 'off');
   } else {
     conn.style.display  = 'none';
