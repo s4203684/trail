@@ -428,10 +428,14 @@
           </div>
           <div id="sync-last-time" style="font-size:0.78rem;color:#aaa;margin-bottom:14px"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-green btn-sm" onclick="syncToGist(true)">&#x21BB; Sync Now</button>
-            <button class="btn btn-gray btn-sm" onclick="loadFromGist(true)">&#x2B07; Pull from Gist</button>
+            <button class="btn btn-green btn-sm" onclick="syncToGist(true)">↑ Push to Gist</button>
+            <button class="btn btn-gray btn-sm" onclick="loadFromGist(true)">↓ Pull from Gist</button>
             <button class="btn btn-red btn-sm" onclick="disconnectGist()">Disconnect</button>
           </div>
+          <p style="font-size:0.78rem;color:#aaa;margin-top:10px">
+            On a new device: paste your token → Connect → data loads automatically.<br>
+            If it doesn't appear, tap <strong>↓ Pull from Gist</strong>.
+          </p>
         </div>
 
         <div id="sync-disconnected">
@@ -1649,8 +1653,12 @@ function showSyncIndicator(msg, type) {
 
 async function findExistingStudyTrailGist(token) {
   for (let page = 1; page <= 5; page++) {
-    const res = await fetch(`https://api.github.com/gists?per_page=100&page=${page}`, {
-      headers: { 'Authorization':'token ' + token }
+    const res = await fetch(`https://api.github.com/gists?per_page=100&page=${page}&t=${Date.now()}`, {
+      headers: {
+        'Authorization': 'token ' + token,
+        'Cache-Control': 'no-cache, no-store',
+        'Pragma': 'no-cache'
+      }
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const gists = await res.json();
@@ -1724,10 +1732,10 @@ async function syncToGist(manual) {
 }
 
 async function loadFromGist(manual) {
-  const token  = getGistToken();
+  const token = getGistToken();
   if (!token) return;
 
-  if (manual) showSyncIndicator('Loading from Gist…', '');
+  showSyncIndicator('Loading from Gist…', '');
   setSyncDot('spin');
 
   try {
@@ -1738,45 +1746,76 @@ async function loadFromGist(manual) {
     }
     if (!gistId) throw new Error('No StudyTrail gist found');
 
-    const res = await fetch('https://api.github.com/gists/' + gistId, {
-      headers: { 'Authorization':'token ' + token }
+    // Force no-cache — append timestamp to bust Safari's aggressive API caching
+    const cacheBust = '?t=' + Date.now();
+    const res = await fetch('https://api.github.com/gists/' + gistId + cacheBust, {
+      headers: {
+        'Authorization': 'token ' + token,
+        'Cache-Control': 'no-cache, no-store',
+        'Pragma': 'no-cache'
+      }
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json    = await res.json();
-    const file    = json.files[GIST_FILENAME];
+    const json = await res.json();
+    const file = json.files && json.files[GIST_FILENAME];
     if (!file) throw new Error('File not found in gist');
-    const payload = JSON.parse(await readGistFileContent(file));
-    const remote  = normalizeData(payload.data || payload);
 
-    if (!remote.subjects) throw new Error('Invalid data');
+    const rawContent = await readGistFileContent(file);
+    const payload    = JSON.parse(rawContent);
+    const remote     = normalizeData(payload.data || payload);
 
-    // Only overwrite if remote is newer or manual pull
-    const localData = getData();
-    const localCount  = (localData.history || []).length;
-    const remoteCount = (remote.history || []).length;
+    if (!remote.subjects || !Array.isArray(remote.subjects)) throw new Error('Invalid data structure');
 
-    if (manual || remoteCount >= localCount) {
+    // Always load if: manual pull, OR local data is empty, OR remote has more history
+    const localData   = getData();
+    const localCount  = (localData.subjects || []).length;
+    const remoteCount = (remote.subjects || []).length;
+    const localHistoryCount  = (localData.history || []).length;
+    const remoteHistoryCount = (remote.history || []).length;
+
+    // Always load if: manual, local is empty, or remote has more data
+    const isEmpty = localCount === 0 && localHistoryCount === 0;
+    const remoteHasMore = remoteHistoryCount > localHistoryCount || remoteCount > localCount;
+    const shouldLoad = manual || isEmpty || remoteHasMore;
+
+    if (shouldLoad) {
+      // Write to localStorage first before any renders
       localStorage.setItem('st2_data', JSON.stringify(remote));
       if (payload.name) saveName2(payload.name);
+      // Now render with the newly written data
       buildSidebar();
       renderSubjects();
       updateReminderBadge();
+      updateSyncUI();
+      const subjectCount = (remote.subjects || []).length;
       if (manual) {
         showPage('subjects');
-        toast('Data loaded from GitHub Gist ✓');
+        toast(`Loaded ${subjectCount} subject${subjectCount===1?'':'s'} from Gist ✓`);
+      } else if (isEmpty) {
+        // Silent auto-load on open — show indicator so user knows data appeared
+        showSyncIndicator(`✓ Loaded ${subjectCount} subjects from Gist`, 'ok');
+      } else {
+        showSyncIndicator('✓ Synced from Gist', 'ok');
       }
+    } else {
+      showSyncIndicator('✓ Up to date', 'ok');
     }
 
     setSyncDot('ok');
-    showSyncIndicator('✓ Up to date', 'ok');
     updateSyncUI();
+
   } catch(e) {
     setSyncDot('err');
-    showSyncIndicator('Load failed', 'err');
+    const msg = String(e && e.message || 'Unknown error');
+    showSyncIndicator('Sync failed: ' + msg.slice(0, 40), 'err');
     if (manual) {
-      const msg = String(e && e.message || '');
-      toast(msg === 'No StudyTrail gist found' ? 'No StudyTrail gist found for this token yet' : 'Could not load from Gist — check token or internet');
+      if (msg === 'No StudyTrail gist found') {
+        toast('No StudyTrail gist found — try syncing from your main device first');
+      } else {
+        toast('Could not load from Gist: ' + msg.slice(0, 60));
+      }
     }
+    console.error('loadFromGist error:', e);
   }
 }
 
@@ -1811,11 +1850,23 @@ async function saveGistToken() {
     else localStorage.removeItem(GIST_ID_KEY);
     toast('Connected as ' + user.login + ' ✓');
     updateSyncUI();
-    if (existingGistId) await loadFromGist(false);
-    else await syncToGist(false);
+    if (existingGistId) {
+      // Found existing gist — always force-load all data
+      showSyncIndicator('Loading your data…', '');
+      await loadFromGist(true);
+    } else {
+      // No existing gist yet — push current local data up to create one
+      await syncToGist(false);
+      toast('Connected ✓ — data saved to new Gist');
+    }
     updateSyncUI();
   } catch(e) {
-    toast('Could not connect — check your token has gist scope');
+    const msg = String(e && e.message || '');
+    if (msg.includes('401') || msg.includes('Invalid')) {
+      toast('Invalid token — make sure it has "gist" scope');
+    } else {
+      toast('Could not connect: ' + (msg || 'check your token and internet'));
+    }
     setSyncDot('err');
     showSyncIndicator('Connection failed', 'err');
   }
@@ -1893,8 +1944,9 @@ function saveData(d) {
   updateBackupStatus();
   const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active');
 
-  // 2. If connected to Gist, load latest data on open
-  if (getGistToken() && getGistId()) {
+  // 2. If token exists, always try to load from Gist on open
+  // (gistId will be discovered via findExistingStudyTrailGist if not cached)
+  if (getGistToken()) {
     loadFromGist(false);
   }
 })();
