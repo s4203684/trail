@@ -200,26 +200,41 @@
       }
       .sidebar-brand { padding:16px 16px 12px; }
       .sidebar-section { padding:12px 16px 6px; }
+      /* Mobile: make entire sidebar a top nav bar */
+      .sidebar { flex-direction:row; flex-wrap:wrap; height:auto; width:100%; overflow-x:auto; overflow-y:hidden; }
+      .sidebar-brand { padding:12px 16px; border-bottom:none; border-right:1px solid #2a2a2a; flex-shrink:0; }
+      .sidebar-brand span { display:none; }
+      .sidebar-section { display:none; }
       #sb-subjects {
         display:flex;
-        gap:8px;
+        flex-direction:row;
+        gap:4px;
         overflow-x:auto;
-        padding:0 12px 10px;
+        padding:8px 8px;
         scrollbar-width:none;
+        flex:1;
+        align-items:center;
       }
       #sb-subjects::-webkit-scrollbar { display:none; }
+      /* All sidebar buttons go horizontal */
       .sidebar-btn {
-        display:inline-block;
+        display:inline-flex;
+        align-items:center;
         width:auto;
         min-width:max-content;
-        padding:10px 12px;
+        padding:7px 12px;
         border-left:none;
         border-bottom:2px solid transparent;
-        border-radius:10px;
+        border-radius:8px;
         background:#222;
         margin:0;
+        font-size:0.8rem;
+        white-space:nowrap;
       }
       .sidebar-btn.active { border-left-color:transparent; border-bottom-color:#4caf50; background:#1a2a1a; }
+      /* More section buttons inline after subjects */
+      .sidebar > div:last-of-type,
+      .sidebar > button { display:inline-flex; flex-shrink:0; }
       .main { margin-left:0; max-width:none; padding:18px 14px 28px; }
       .row { flex-direction:column; }
       .page-header { margin-bottom:18px; }
@@ -671,33 +686,28 @@ function getFocusSubject(data) {
   return scored[0];
 }
 function getWeeklySummary(data) {
+  if (data.history.length === 0) return null;
   const now = new Date();
-  if (now.getDay() !== 1) return null;
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const thisMonday = new Date(today);
-  thisMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  const lastMonday = new Date(thisMonday);
-  lastMonday.setDate(thisMonday.getDate() - 7);
-  const lastSunday = new Date(thisMonday);
-  lastSunday.setDate(thisMonday.getDate() - 1);
+  // Always show last 7 days summary
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 7);
   const entries = data.history.filter(h => {
     const at = new Date(h.at);
-    return at >= lastMonday && at < thisMonday;
+    return at >= sevenDaysAgo && at <= now;
   });
   const studiedIds = new Set(entries.map(h => h.subjectId));
-  const studiedSubjects = sortSubjects(
-    data.subjects.filter(s => studiedIds.has(s.id)),
-    data.history
-  ).map(s => s.name);
-  const ignoredSubjects = sortSubjects(
-    data.subjects.filter(s => !studiedIds.has(s.id) && (s.status || 'active') !== 'done'),
-    data.history
-  ).map(s => s.name);
+  const studiedSubjects = data.subjects
+    .filter(s => studiedIds.has(s.id))
+    .map(s => s.name);
+  const ignoredSubjects = data.subjects
+    .filter(s => !studiedIds.has(s.id) && (s.status || 'active') === 'active')
+    .map(s => s.name);
   return {
     totalSessions: entries.length,
     studiedSubjects,
     ignoredSubjects,
-    rangeLabel: `${fmtDateOnly(lastMonday)} to ${fmtDateOnly(lastSunday)}`
+    rangeLabel: `Last 7 days`
   };
 }
 
@@ -770,23 +780,26 @@ function renderSubjects() {
   const focusCard = document.getElementById('focus-card');
   const focus = getFocusSubject(data);
   if (focusCard && focus) {
-    const reason = [];
+    const reasons = [];
     if (focus.deadlineDays !== null) {
-      if (focus.deadlineDays <= 0) reason.push(`deadline ${focus.deadlineDays === 0 ? 'is due today' : `is overdue by ${Math.abs(focus.deadlineDays)} days`}`);
-      else reason.push(`deadline is in ${focus.deadlineDays} days`);
+      if (focus.deadlineDays <= 0) reasons.push(focus.deadlineDays === 0 ? '⚠ Deadline is today' : `⚠ Deadline overdue by ${Math.abs(focus.deadlineDays)} day${Math.abs(focus.deadlineDays)===1?'':'s'}`);
+      else if (focus.deadlineDays <= 3) reasons.push(`⚠ Deadline in ${focus.deadlineDays} day${focus.deadlineDays===1?'':'s'}`);
+      else reasons.push(`Deadline in ${focus.deadlineDays} days`);
     }
-    if (focus.inactiveDays !== null) {
-      reason.push(focus.inactiveDays >= 999 ? 'you have not started it yet' : `you have not touched it in ${focus.inactiveDays} days`);
-    }
-    if (focus.subject.nextTodo) reason.push('a next step is already planned');
+    if (focus.inactiveDays >= 999) reasons.push('You have not started this yet');
+    else if (focus.inactiveDays >= 5) reasons.push(`Not studied in ${focus.inactiveDays} days`);
+    const actionText = focus.subject.nextTodo
+      ? `Next step: <strong>${esc(focus.subject.nextTodo)}</strong>`
+      : 'Open this subject and log what to do next.';
     focusCard.innerHTML = `<div class="insight-card focus">
-      <div class="insight-label">Today's Focus</div>
+      <div class="insight-label">📌 Suggested Focus</div>
       <div class="insight-title">${esc(focus.subject.name)}</div>
-      <div class="insight-text">${reason.join(', ')}. ${focus.subject.nextTodo ? `Start with: ${esc(focus.subject.nextTodo)}` : 'Open this subject and log the next concrete step.'}</div>
+      ${reasons.length ? `<div class="insight-text" style="margin-bottom:8px">${reasons.join(' · ')}</div>` : ''}
+      <div class="insight-text">${actionText}</div>
       <div class="insight-meta">
         ${deadlineBadge(focus.subject)}
-        ${focus.inactiveDays !== null ? `<span class="${focus.inactiveDays <= 2 ? 'days-ago days-fresh' : focus.inactiveDays <= 5 ? 'days-ago days-warn' : 'days-ago days-danger'}">${focus.inactiveDays >= 999 ? 'Not started' : `${focus.inactiveDays}d idle`}</span>` : ''}
-        <button class="btn btn-green btn-sm" onclick="openSubject('${focus.subject.id}')">Open Subject</button>
+        ${focus.inactiveDays !== null && focus.inactiveDays < 999 ? `<span class="${focus.inactiveDays <= 2 ? 'days-ago days-fresh' : focus.inactiveDays <= 5 ? 'days-ago days-warn' : 'days-ago days-danger'}">${focus.inactiveDays}d idle</span>` : ''}
+        <button class="btn btn-green btn-sm" onclick="openSubject('${focus.subject.id}')">Open →</button>
       </div>
     </div>`;
   } else if (focusCard) {
@@ -796,12 +809,14 @@ function renderSubjects() {
   const weekly = getWeeklySummary(data);
   const weeklyEl = document.getElementById('weekly-summary');
   if (weekly) {
+    const ignoredHtml = weekly.ignoredSubjects.length
+      ? `<div class="insight-text" style="color:#c0392b;margin-top:4px">⚠ Not touched: ${weekly.ignoredSubjects.map(n => esc(n)).join(', ')}</div>`
+      : `<div class="insight-text" style="color:#2d6a4f;margin-top:4px">✓ All active subjects studied</div>`;
     weeklyEl.innerHTML = `<div class="insight-card summary">
-      <div class="insight-label">Weekly Summary</div>
-      <div class="insight-title">Last week: ${weekly.totalSessions} session${weekly.totalSessions === 1 ? '' : 's'}</div>
-      <div class="insight-text">Studied: ${weekly.studiedSubjects.length ? esc(weekly.studiedSubjects.join(', ')) : 'none'}.</div>
-      <div class="insight-text">Ignored: ${weekly.ignoredSubjects.length ? esc(weekly.ignoredSubjects.join(', ')) : 'none'}.</div>
-      <div class="insight-text" style="margin-top:8px;color:#888">${weekly.rangeLabel}</div>
+      <div class="insight-label">📊 Last 7 Days</div>
+      <div class="insight-title">${weekly.totalSessions} session${weekly.totalSessions === 1 ? '' : 's'} logged</div>
+      ${weekly.studiedSubjects.length ? `<div class="insight-text">Covered: ${weekly.studiedSubjects.map(n => esc(n)).join(', ')}</div>` : '<div class="insight-text" style="color:#aaa">No sessions logged yet this week</div>'}
+      ${weekly.ignoredSubjects.length > 0 || weekly.studiedSubjects.length > 0 ? ignoredHtml : ''}
     </div>`;
   } else {
     weeklyEl.innerHTML = '';
@@ -882,7 +897,7 @@ function addSubject() {
   const deadlineDate = document.getElementById('f-deadline-date').value;
   if (!name) { toast('Enter a subject name'); return; }
   const data = getData();
-  data.subjects.push({ id:uid(), name, colorIdx:data.subjects.length, status, topics:[], stopped:'', nextTodo:'', createdAt:ts(), deadlineTitle, deadlineDate });
+  data.subjects.push({ id:uid(), name, colorIdx:data.subjects.length, status, topics:[], stopped:'', nextTodo:'', createdAt:ts(), deadlineTitle: deadlineTitle||null, deadlineDate: deadlineDate||null });
   saveData(data);
   document.getElementById('f-subject-name').value = '';
   document.getElementById('f-deadline-title').value = '';
@@ -941,10 +956,18 @@ function renderSubjectDetail() {
   document.getElementById('detail-deadline-date').value = s.deadlineDate || '';
   const deadlineStatus = document.getElementById('detail-deadline-status');
   if (s.deadlineDate) {
-    const timing = formatDeadlineLabel({ deadlineTitle: '', deadlineDate: s.deadlineDate });
-    deadlineStatus.textContent = `${s.deadlineTitle || 'Deadline'}: ${fmtDateOnly(s.deadlineDate)} (${timing})`;
+    const diff = daysUntil(s.deadlineDate);
+    let timing = '';
+    if (diff === null) timing = '';
+    else if (diff < 0) timing = `overdue by ${Math.abs(diff)} day${Math.abs(diff)===1?'':'s'}`;
+    else if (diff === 0) timing = 'due today';
+    else if (diff === 1) timing = 'due tomorrow';
+    else timing = `${diff} days away`;
+    deadlineStatus.textContent = `${s.deadlineTitle || 'Deadline'}: ${fmtDateOnly(s.deadlineDate)}${timing ? ' — ' + timing : ''}`;
+    deadlineStatus.style.color = diff !== null && diff <= 3 ? '#c0392b' : diff !== null && diff <= 7 ? '#b5651d' : '#888';
   } else {
     deadlineStatus.textContent = 'No deadline set';
+    deadlineStatus.style.color = '#aaa';
   }
 
   // Topics
@@ -980,8 +1003,8 @@ function saveSubjectDeadline() {
   const data = getData();
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
-  s.deadlineTitle = document.getElementById('detail-deadline-title').value.trim();
-  s.deadlineDate = document.getElementById('detail-deadline-date').value;
+  s.deadlineTitle = document.getElementById('detail-deadline-title').value.trim() || null;
+  s.deadlineDate  = document.getElementById('detail-deadline-date').value || null;
   saveData(data);
   renderSubjectDetail();
   renderSubjects();
