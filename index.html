@@ -1820,16 +1820,31 @@ function showSyncIndicator(msg, type) {
   el._t = setTimeout(() => el.className = '', 3000);
 }
 
+function githubHeaders(token, extra) {
+  return Object.assign({
+    'Authorization': 'Bearer ' + token,
+    'Accept': 'application/vnd.github+json'
+  }, extra || {});
+}
+
+async function readGitHubError(res) {
+  let detail = '';
+  try {
+    const json = await res.clone().json();
+    detail = json && (json.message || json.error || '');
+  } catch (_) {}
+  return detail ? 'HTTP ' + res.status + ' (' + detail + ')' : 'HTTP ' + res.status;
+}
+
 async function findExistingStudyTrailGist(token) {
   for (let page = 1; page <= 5; page++) {
     const res = await fetch(`https://api.github.com/gists?per_page=100&page=${page}&t=${Date.now()}`, {
-      headers: {
-        'Authorization': 'token ' + token,
+      headers: githubHeaders(token, {
         'Cache-Control': 'no-cache, no-store',
         'Pragma': 'no-cache'
-      }
+      })
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error(await readGitHubError(res));
     const gists = await res.json();
     const match = gists.find(g => g.files && g.files[GIST_FILENAME]);
     if (match) return match.id;
@@ -1874,11 +1889,11 @@ async function syncToGist(manual) {
 
     const res = await fetch(url, {
       method,
-      headers: { 'Authorization':'token ' + token, 'Content-Type':'application/json' },
+      headers: githubHeaders(token, { 'Content-Type':'application/json' }),
       body: JSON.stringify(body)
     });
 
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error(await readGitHubError(res));
     const json = await res.json();
 
     if (!gistId) {
@@ -1895,8 +1910,10 @@ async function syncToGist(manual) {
     }
   } catch(e) {
     setSyncDot('err');
-    showSyncIndicator('Sync failed', 'err');
-    if (manual) toast('Sync failed — check token or internet connection');
+    const msg = String(e && e.message || 'Unknown error');
+    showSyncIndicator('Sync failed: ' + msg.slice(0, 40), 'err');
+    if (manual) toast('Sync failed: ' + msg.slice(0, 60));
+    console.error('syncToGist error:', e);
   }
 }
 
@@ -1918,13 +1935,12 @@ async function loadFromGist(manual) {
     // Force no-cache — append timestamp to bust Safari's aggressive API caching
     const cacheBust = '?t=' + Date.now();
     const res = await fetch('https://api.github.com/gists/' + gistId + cacheBust, {
-      headers: {
-        'Authorization': 'token ' + token,
+      headers: githubHeaders(token, {
         'Cache-Control': 'no-cache, no-store',
         'Pragma': 'no-cache'
-      }
+      })
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error(await readGitHubError(res));
     const json = await res.json();
     const file = json.files && json.files[GIST_FILENAME];
     if (!file) throw new Error('File not found in gist');
@@ -1994,13 +2010,12 @@ async function loadFromGistForced(token, gistId) {
     setSyncDot('spin');
     const cacheBust = '?t=' + Date.now();
     const res = await fetch('https://api.github.com/gists/' + gistId + cacheBust, {
-      headers: {
-        'Authorization': 'token ' + token,
+      headers: githubHeaders(token, {
         'Cache-Control': 'no-cache, no-store',
         'Pragma': 'no-cache'
-      }
+      })
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error(await readGitHubError(res));
     const json = await res.json();
     const file = json.files && json.files[GIST_FILENAME];
     if (!file) throw new Error('StudyTrail data file not found in Gist');
@@ -2059,17 +2074,28 @@ async function saveGistToken() {
   setSyncDot('spin');
 
   try {
-    // Step 1: Validate token
+    // Step 1: Validate token against the user endpoint.
     const res = await fetch('https://api.github.com/user', {
-      headers: { 'Authorization': 'token ' + token }
+      headers: githubHeaders(token)
     });
-    if (!res.ok) throw new Error('Invalid token — HTTP ' + res.status);
+    if (!res.ok) throw new Error(await readGitHubError(res));
     const user = await res.json();
 
-    // Step 2: Store token
+    // Step 2: Validate the same token can access Gists.
+    const gistCheck = await fetch('https://api.github.com/gists?per_page=1&t=' + Date.now(), {
+      headers: githubHeaders(token, {
+        'Cache-Control': 'no-cache, no-store',
+        'Pragma': 'no-cache'
+      })
+    });
+    if (!gistCheck.ok) {
+      throw new Error('Token lacks Gist access: ' + await readGitHubError(gistCheck));
+    }
+
+    // Step 3: Store token
     localStorage.setItem(GIST_TOKEN_KEY, token);
 
-    // Step 3: Look for existing Gist
+    // Step 4: Look for existing Gist
     showSyncIndicator('Looking for your data…', '');
     const existingGistId = await findExistingStudyTrailGist(token);
 
@@ -2079,7 +2105,7 @@ async function saveGistToken() {
       showSyncIndicator('Found your Gist — loading data…', '');
       updateSyncUI();
 
-      // Step 4: Force-load data regardless of local state
+      // Step 5: Force-load data regardless of local state
       await loadFromGistForced(token, existingGistId);
     } else {
       // No existing gist — create one with current local data
@@ -2091,13 +2117,15 @@ async function saveGistToken() {
     updateSyncUI();
   } catch(e) {
     const msg = String(e && e.message || '');
-    if (msg.includes('401') || msg.toLowerCase().includes('invalid')) {
-      toast('Invalid token — make sure it has "gist" scope');
+    if (msg.toLowerCase().includes('gist access')) {
+      toast('Token cannot access Gists. Use a classic PAT with the "gist" scope.');
+    } else if (msg.includes('401') || msg.toLowerCase().includes('invalid')) {
+      toast('Invalid token — use a classic PAT with the "gist" scope');
     } else {
-      toast('Could not connect: ' + (msg.slice(0, 60) || 'check your token and internet'));
+      toast('Could not connect: ' + (msg.slice(0, 60) || 'check token scope or internet'));
     }
     setSyncDot('err');
-    showSyncIndicator('Connection failed', 'err');
+    showSyncIndicator('Connection failed: ' + msg.slice(0, 40), 'err');
   }
 }
 
@@ -2129,7 +2157,7 @@ function updateSyncUI() {
     const linkEl = document.getElementById('sync-gist-link');
     if (gistId) linkEl.innerHTML = '<a href="https://gist.github.com/' + gistId + '" target="_blank" style="color:#2d6a4f">View Gist ↗</a>';
     else linkEl.textContent = '';
-    setSyncDot('ok');
+    setSyncDot(lastSync ? 'ok' : 'off');
   } else {
     conn.style.display  = 'none';
     disc.style.display  = 'block';
