@@ -116,6 +116,7 @@
     .subject-stopped { font-size:0.82rem; color:var(--ink3); padding:8px 10px; background:var(--bg3); border-radius:7px; border-left:3px solid #ddd; margin-bottom:8px; line-height:1.5; }
     .subject-stopped.filled { border-left-color:#2d6a4f; }
     .subject-next { font-size:0.82rem; color:#2d6a4f; font-weight:500; padding:6px 10px; background:#f0faf4; border-radius:7px; margin-bottom:8px; }
+    body.dark .subject-next { background:#1a2e20; color:#4caf50; }
     .subject-card-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; flex-wrap:wrap; }
     .days-ago { font-size:0.72rem; padding:2px 8px; border-radius:20px; font-weight:500; flex-shrink:0; }
     .days-fresh  { background:#d8f3dc; color:#2d6a4f; }
@@ -144,9 +145,9 @@
     }
     .insight-card.focus { border-color:#d8f3dc; background:linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%); }
     .insight-card.summary { background:linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%); }
-    .insight-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin-bottom:8px; }
+    .insight-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink4); margin-bottom:8px; }
     .insight-title { font-size:1.05rem; font-weight:700; margin-bottom:8px; }
-    .insight-text { font-size:0.88rem; color:#555; line-height:1.55; }
+    .insight-text { font-size:0.88rem; color:var(--ink3); line-height:1.55; }
     .insight-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
 
     /* ── Subject detail ── */
@@ -159,7 +160,7 @@
     /* ── Topics ── */
     .topic-item { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-bottom:7px; display:flex; align-items:center; gap:10px; }
     .topic-name { flex:1; font-size:0.9rem; font-weight:500; }
-    .topic-note { font-size:0.76rem; color:#999; font-style:italic; margin-top:2px; }
+    .topic-note { font-size:0.76rem; color:var(--ink4); font-style:italic; margin-top:2px; }
     select.status-sel { width:auto; padding:4px 26px 4px 9px; font-size:0.78rem; }
 
     /* ── Session entries ── */
@@ -180,12 +181,12 @@
       margin-bottom: 10px;
       flex-wrap: wrap;
     }
-    .session-date { font-size:0.72rem; color:#aaa; font-weight:500; }
-    .session-subject-tag { font-size:0.72rem; background:#f0f0ec; color:#555; padding:2px 8px; border-radius:20px; }
+    .session-date { font-size:0.72rem; color:var(--ink5); font-weight:500; }
+    .session-subject-tag { font-size:0.72rem; background:var(--bg4); color:var(--ink3); padding:2px 8px; border-radius:20px; }
 
     .session-field { margin-bottom:8px; }
-    .session-field-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.07em; color:#aaa; margin-bottom:2px; }
-    .session-field-value { font-size:0.875rem; color:#333; line-height:1.5; }
+    .session-field-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--ink5); margin-bottom:2px; }
+    .session-field-value { font-size:0.875rem; color:var(--ink2); line-height:1.5; }
 
     .session-entry-footer {
       display: flex;
@@ -213,6 +214,9 @@
     .revision-banner-title { font-weight:600; font-size:0.9rem; color:#b5651d; margin-bottom:4px; }
     .revision-banner-item { font-size:0.82rem; color:#7a5020; padding:3px 0; }
     .revision-banner-item a { color:#2d6a4f; cursor:pointer; text-decoration:underline; }
+    body.dark .revision-banner { background:#2a1f0a; border-color:#4a3510; }
+    body.dark .revision-banner-title { color:#e0a050; }
+    body.dark .revision-banner-item { color:#c8985a; }
 
     /* ── Modal ── */
     .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; align-items:center; justify-content:center; padding:20px; }
@@ -987,9 +991,8 @@ function showPage(name) {
 
   if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
-  if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); }
+  if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); renderBackupReminder(); }
   if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
-  updateSubjectPageFab();
 }
 
 // ══ MODALS ══
@@ -1017,7 +1020,6 @@ function renderSubjects() {
   const due  = getDueReminders();
   const orderedSubjects = sortSubjects(data.subjects, data.history);
   renderSessionIntelligence(data);
-  renderBackupReminder();
 
   const focusCard = document.getElementById('focus-card');
   const focus = getFocusSubject(data);
@@ -1701,7 +1703,6 @@ function buildSidebar() {
     </button>`).join('');
   const remindBtn = document.getElementById('sb-remind-count');
   if (remindBtn) remindBtn.title = due > 0 ? `${due} revision reminder${due===1?'':'s'} waiting` : 'No pending reminders';
-  updateSubjectPageFab();
 }
 
 // ══ SETTINGS ══
@@ -1918,7 +1919,6 @@ function exportData() {
   URL.revokeObjectURL(url);
   localStorage.setItem('st2_last_export', ts());
   updateBackupStatus();
-  renderBackupReminder();
   toast('Backup downloaded ✓');
 }
 
@@ -1953,16 +1953,7 @@ function importData(event) {
   event.target.value = '';
 }
 
-// Auto-backup: every time data is saved, keep a rolling backup copy
-const _origSaveData = saveData;
-function saveData(d) {
-  const normalized = normalizeData(d);
-  localStorage.setItem('st2_data', JSON.stringify(normalized));
-  // Also write a backup copy with timestamp
-  try {
-    localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: normalized }));
-  } catch(e) {}
-}
+// saveData defined below with auto-sync wrapper
 
 // ══ GITHUB GIST SYNC ══
 
@@ -2327,16 +2318,20 @@ function updateSyncUI() {
   }
 }
 
-// Wrap saveData to auto-sync after every save (debounced)
+// Wrap saveData to auto-sync after every save (debounced + in-flight guard)
 let _syncTimer = null;
-const _baseSave = saveData;
+let _syncInFlight = false;
 function saveData(d) {
   const normalized = normalizeData(d);
   localStorage.setItem('st2_data', JSON.stringify(normalized));
   try { localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: normalized })); } catch(e) {}
-  // Debounce sync — wait 1.5s after last save before pushing
+  // Debounce: wait 1.5s after last save, skip if a sync is already running
   clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(() => syncToGist(false), 1500);
+  _syncTimer = setTimeout(async () => {
+    if (_syncInFlight) return;
+    _syncInFlight = true;
+    try { await syncToGist(false); } finally { _syncInFlight = false; }
+  }, 1500);
 }
 
 // ══ BOOT ══
@@ -2365,8 +2360,8 @@ function saveData(d) {
   updateSyncUI();
   updateBackupStatus();
   updateStreak();
-  updateSubjectPageFab();
   checkA2HS();
+  renderBackupReminder();
   const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active');
 
   // 2. If token exists, always try to load from Gist on open
