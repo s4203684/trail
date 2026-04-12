@@ -198,9 +198,6 @@
       border-top:1px solid var(--border);
       flex-wrap:wrap;
     }
-    .session-summary-line { font-size:0.875rem; color:var(--ink2); line-height:1.5; margin-top:2px; }
-    .session-extra-details { display:none; margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); }
-    .session-extra-details.open { display:block; }
 
     /* ── Revision banner (top of page) ── */
     .revision-banner {
@@ -1565,23 +1562,6 @@ function markReminderDone(sessionId) {
   toast('Marked as revised ✓');
 }
 
-function toggleReminderDetails(sessionId, btn) {
-  const box = document.getElementById(`reminder-details-${sessionId}`);
-  if (!box) return;
-  const isOpen = box.classList.toggle('open');
-  if (btn) btn.textContent = isOpen ? 'Hide' : 'Open';
-}
-
-function renderReminderExpandedDetails(h) {
-  const parts = [];
-  if (h.stopped) parts.push(`<div class="session-field"><div class="session-field-label">📍 Stopped at</div><div class="session-field-value">${esc(h.stopped)}</div></div>`);
-  if (h.next) parts.push(`<div class="session-field"><div class="session-field-label">→ Next up</div><div class="session-field-value" style="color:#2d6a4f">${esc(h.next)}</div></div>`);
-  if (h.notes) parts.push(`<div class="session-field"><div class="session-field-label">📝 Notes</div><div class="session-field-value" style="color:#666">${esc(h.notes)}</div></div>`);
-  if (h.remindOn && !h.remindDone) parts.push(`<div class="session-field"><div class="session-field-label">🔔 Reminder date</div><div class="session-field-value">${fmtDateOnly(h.remindOn)}</div></div>`);
-  parts.push(`<div class="session-field"><div class="session-field-label">🕒 Logged</div><div class="session-field-value">${fmtDate(h.at)}</div></div>`);
-  return parts.join('');
-}
-
 function renderReminders() {
   const data  = getData();
   const today = todayISO();
@@ -1607,14 +1587,10 @@ function renderReminders() {
         ${badge}
         <span class="session-date">${fmtDate(h.at)}</span>
       </div>
-      <div class="session-summary-line">${h.stopped ? `📍 ${esc(h.stopped)}` : '<span style="color:#aaa">No stop point saved</span>'}</div>
-      <div id="reminder-details-${h.id}" class="session-extra-details">
-        ${renderReminderExpandedDetails(h)}
-      </div>
+      ${h.stopped ? `<div class="session-field"><div class="session-field-label">Stopped at</div><div class="session-field-value">${esc(h.stopped)}</div></div>` : ''}
+      ${h.notes   ? `<div class="session-field"><div class="session-field-label">Notes</div><div class="session-field-value" style="color:#666">${esc(h.notes)}</div></div>` : ''}
       <div class="session-entry-footer">
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" onclick="toggleReminderDetails('${h.id}', this)">Open</button>
-        </div>
+        <div></div>
         <button class="btn btn-amber btn-sm" onclick="markReminderDone('${h.id}')">✓ Mark Revised</button>
       </div>
     </div>`;
@@ -1650,15 +1626,7 @@ function renderDoneReminders(done) {
         <span style="font-size:0.72rem;color:#aaa">✓ Revised</span>
         <span class="session-date">${fmtDate(h.at)}</span>
       </div>
-      <div class="session-summary-line">${h.stopped ? `📍 ${esc(h.stopped)}` : '<span style="color:#aaa">No stop point saved</span>'}</div>
-      <div id="reminder-details-${h.id}" class="session-extra-details">
-        ${renderReminderExpandedDetails(h)}
-      </div>
-      <div class="session-entry-footer">
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" onclick="toggleReminderDetails('${h.id}', this)">Open</button>
-        </div>
-      </div>
+      ${h.stopped ? `<div style="font-size:0.85rem;color:#888">${esc(h.stopped)}</div>` : ''}
     </div>`).join('');
 }
 
