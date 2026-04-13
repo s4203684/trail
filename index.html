@@ -75,6 +75,44 @@
     .subject-card, .session-entry, .insight-card, .ws-card, .topic-item { transition:transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
     .subject-card:hover, .session-entry:hover, .insight-card:hover { transform:translateY(-1px); }
     .smart-pill { display:inline-flex; align-items:center; gap:6px; font-size:0.72rem; padding:4px 10px; border-radius:999px; font-weight:600; }
+
+    /* ── Session type chips ── */
+    .type-chip {
+      display:inline-flex; align-items:center; gap:5px;
+      font-size:0.72rem; padding:3px 10px; border-radius:999px;
+      font-weight:600; cursor:default; white-space:nowrap;
+    }
+    .type-learning   { background:#e4f0f8; color:#1d5f8a; }
+    .type-assignment { background:#fce8e4; color:#c0392b; }
+    .type-revision   { background:#fdf0e0; color:#b5651d; }
+    .type-lab        { background:#f0e8ff; color:#6b21b0; }
+    .type-other      { background:var(--bg4); color:var(--ink3); }
+
+    /* Type selector buttons in modal */
+    .type-btn-group { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:4px; }
+    .type-btn {
+      padding:6px 14px; border-radius:999px; border:1.5px solid var(--border2);
+      font-size:0.8rem; font-weight:500; cursor:pointer;
+      background:var(--bg4); color:var(--ink3);
+      transition:all 0.15s;
+    }
+    .type-btn:hover { border-color:#2d6a4f; color:#2d6a4f; }
+    .type-btn.selected { border-color:transparent; }
+    .type-btn.selected.t-learning   { background:#e4f0f8; color:#1d5f8a; border-color:#1d5f8a; }
+    .type-btn.selected.t-assignment { background:#fce8e4; color:#c0392b; border-color:#c0392b; }
+    .type-btn.selected.t-revision   { background:#fdf0e0; color:#b5651d; border-color:#b5651d; }
+    .type-btn.selected.t-lab        { background:#f0e8ff; color:#6b21b0; border-color:#6b21b0; }
+    .type-btn.selected.t-other      { background:var(--bg3); color:var(--ink2); border-color:var(--border); }
+
+    /* Session filter tabs */
+    .session-filter-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+    .session-filter-btn {
+      padding:5px 12px; border-radius:999px; border:1.5px solid var(--border2);
+      font-size:0.78rem; font-weight:500; cursor:pointer;
+      background:var(--bg4); color:var(--ink4); transition:all 0.15s;
+    }
+    .session-filter-btn:hover { color:var(--ink); border-color:var(--border); }
+    .session-filter-btn.active { background:#2d6a4f; color:#fff; border-color:#2d6a4f; }
     .smart-danger { background:#fce8e4; color:#c0392b; }
     .smart-warn { background:#fdf0e0; color:#b5651d; }
     .smart-good { background:#d8f3dc; color:#2d6a4f; }
@@ -435,9 +473,17 @@
       <div id="topic-list" style="margin-bottom:24px"></div>
 
       <!-- Session log for this subject -->
-      <div class="section-head">
+      <div class="section-head" style="margin-bottom:10px">
         Session Log
-        <span style="font-size:0.78rem;color:#aaa;font-weight:400">All sessions for this subject</span>
+        <span style="font-size:0.78rem;color:var(--ink5);font-weight:400" id="session-log-count"></span>
+      </div>
+      <div class="session-filter-bar" id="session-filter-bar">
+        <button class="session-filter-btn active" onclick="filterSessions('all', this)">All</button>
+        <button class="session-filter-btn" onclick="filterSessions('learning', this)">📖 Learning</button>
+        <button class="session-filter-btn" onclick="filterSessions('assignment', this)">📝 Assignment</button>
+        <button class="session-filter-btn" onclick="filterSessions('revision', this)">🔁 Revision</button>
+        <button class="session-filter-btn" onclick="filterSessions('lab', this)">🧪 Lab</button>
+        <button class="session-filter-btn" onclick="filterSessions('other', this)">Other</button>
       </div>
       <div id="session-log"></div>
     </div>
@@ -605,6 +651,17 @@
       <textarea id="s-notes" placeholder="e.g. Still unclear on how async/await works inside loops…" style="min-height:54px"></textarea>
     </div>
 
+    <div class="field">
+      <label>Session type — what kind of work was this?</label>
+      <div class="type-btn-group">
+        <button type="button" class="type-btn t-learning"   onclick="selectSessionType('learning')"   id="stype-learning">📖 Learning</button>
+        <button type="button" class="type-btn t-assignment" onclick="selectSessionType('assignment')" id="stype-assignment">📝 Assignment</button>
+        <button type="button" class="type-btn t-revision"   onclick="selectSessionType('revision')"   id="stype-revision">🔁 Revision</button>
+        <button type="button" class="type-btn t-lab"        onclick="selectSessionType('lab')"        id="stype-lab">🧪 Lab / Practice</button>
+        <button type="button" class="type-btn t-other"      onclick="selectSessionType('other')"      id="stype-other">• Other</button>
+      </div>
+    </div>
+
     <div class="row" style="margin-bottom:14px">
       <div class="field flex1" style="margin:0">
         <label>Topic <span style="color:#aaa;font-weight:400">(optional)</span></label>
@@ -742,6 +799,7 @@ function normalizeData(raw) {
       stopped: h && h.stopped ? h.stopped : '',
       next: h && h.next ? h.next : '',
       notes: h && h.notes ? h.notes : '',
+      sessionType: h && h.sessionType ? h.sessionType : null,
       remindOn: h && h.remindOn ? h.remindOn : null,
       remindDone: !!(h && h.remindDone),
       at: h && h.at ? h.at : ts()
@@ -864,10 +922,17 @@ function getWeeklySummary(data) {
   const ignoredSubjects = data.subjects
     .filter(s => !studiedIds.has(s.id) && (s.status || 'active') === 'active')
     .map(s => s.name);
+  // Count by session type
+  const typeCounts = {};
+  entries.forEach(h => {
+    if (h.sessionType) typeCounts[h.sessionType] = (typeCounts[h.sessionType] || 0) + 1;
+  });
+
   return {
     totalSessions: entries.length,
     studiedSubjects,
     ignoredSubjects,
+    typeCounts,
     rangeLabel: `Last 7 days`
   };
 }
@@ -1055,11 +1120,22 @@ function renderSubjects() {
   if (weekly) {
     const ignoredHtml = weekly.ignoredSubjects.length
       ? `<div class="insight-text" style="color:#c0392b;margin-top:4px">⚠ Not touched: ${weekly.ignoredSubjects.map(n => esc(n)).join(', ')}</div>`
-      : `<div class="insight-text" style="color:#2d6a4f;margin-top:4px">✓ All active subjects studied</div>`;
+      : `<div class="insight-text" style="color:#2d6a4f;margin-top:4px">✓ All active subjects covered</div>`;
+
+    // Build type breakdown pills
+    const typeBreakdown = Object.entries(weekly.typeCounts || {})
+      .filter(([,count]) => count > 0)
+      .map(([type, count]) => {
+        const meta = SESSION_TYPES[type];
+        if (!meta) return '';
+        return `<span class="type-chip ${meta.cls}">${meta.icon} ${count} ${meta.label}</span>`;
+      }).join('');
+
     weeklyEl.innerHTML = `<div class="insight-card summary">
       <div class="insight-label">📊 Last 7 Days</div>
       <div class="insight-title">${weekly.totalSessions} session${weekly.totalSessions === 1 ? '' : 's'} logged</div>
-      ${weekly.studiedSubjects.length ? `<div class="insight-text">Covered: ${weekly.studiedSubjects.map(n => esc(n)).join(', ')}</div>` : '<div class="insight-text" style="color:#aaa">No sessions logged yet this week</div>'}
+      ${typeBreakdown ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">${typeBreakdown}</div>` : ''}
+      ${weekly.studiedSubjects.length ? `<div class="insight-text">Covered: ${weekly.studiedSubjects.map(n => esc(n)).join(', ')}</div>` : '<div class="insight-text" style="color:var(--ink5)">No sessions logged yet this week</div>'}
       ${weekly.ignoredSubjects.length > 0 || weekly.studiedSubjects.length > 0 ? ignoredHtml : ''}
     </div>`;
   } else {
@@ -1305,16 +1381,117 @@ function clearSubjectDeadline() {
   toast('Deadline cleared');
 }
 
+// ══ SESSION TYPE SYSTEM ══
+const SESSION_TYPES = {
+  learning:   { label:'Learning',      icon:'📖', cls:'type-learning'   },
+  assignment: { label:'Assignment',    icon:'📝', cls:'type-assignment' },
+  revision:   { label:'Revision',      icon:'🔁', cls:'type-revision'   },
+  lab:        { label:'Lab / Practice',icon:'🧪', cls:'type-lab'        },
+  other:      { label:'Other',         icon:'•',  cls:'type-other'      },
+};
+
+function sessionTypeBadge(type) {
+  if (!type || !SESSION_TYPES[type]) return '';
+  const t = SESSION_TYPES[type];
+  return `<span class="type-chip ${t.cls}">${t.icon} ${t.label}</span>`;
+}
+
+// Currently selected type in the modal
+let _selectedSessionType = '';
+
+function selectSessionType(type) {
+  _selectedSessionType = type;
+  // Update button states
+  Object.keys(SESSION_TYPES).forEach(k => {
+    const btn = document.getElementById('stype-' + k);
+    if (!btn) return;
+    btn.classList.toggle('selected', k === type);
+  });
+}
+
+function clearSessionTypeButtons() {
+  _selectedSessionType = '';
+  Object.keys(SESSION_TYPES).forEach(k => {
+    const btn = document.getElementById('stype-' + k);
+    if (btn) btn.classList.remove('selected');
+  });
+}
+
+
+function renderHistory() {
+  const data = getData();
+  const filter   = document.getElementById('history-filter');
+  const selected = filter.value;
+  filter.innerHTML = '<option value="">All subjects</option>' +
+    data.subjects.map(s => `<option value="${s.id}" ${s.id===selected?'selected':''}>${esc(s.name)}</option>`).join('');
+
+  let entries = selected ? data.history.filter(h => h.subjectId === selected) : data.history;
+  const list  = document.getElementById('history-list');
+
+  if (entries.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No history yet.<br>Once you log sessions, your progress story will show up here.</div></div>`;
+    return;
+  }
+
+  list.innerHTML = entries.map(h => {
+    const parts = [];
+    if (h.stopped) parts.push(`<div>📍 <strong>Stopped:</strong> ${esc(h.stopped)}</div>`);
+    if (h.next)    parts.push(`<div style="color:#2d6a4f">→ <strong>Next:</strong> ${esc(h.next)}</div>`);
+    if (h.notes)   parts.push(`<div style="color:var(--ink4)">📝 ${esc(h.notes)}</div>`);
+    if (h.remindOn && !h.remindDone) parts.push(`<div style="color:#b5651d">🔔 Revise: ${fmtDateOnly(h.remindOn)}</div>`);
+    return `<div class="log-entry">
+      <div class="log-date" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span>${fmtDate(h.at)}</span>
+        <strong style="color:var(--ink2)">${esc(h.subjectName)}</strong>
+        ${sessionTypeBadge(h.sessionType)}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-top:5px;line-height:1.5">${parts.join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══ SIDEBAR ══
+function buildSidebar() {
+  document.getElementById('sb-name').textContent = getName() || 'Student';
+  const data = getData();
+  const due = getDueReminders().length;
+  document.getElementById('sb-subjects').innerHTML = sortSubjects(data.subjects, data.history).map(s =>
+    `<button class="sidebar-btn sb-subject-btn ${currentSubjectId===s.id?'active':''}" data-id="${s.id}" onclick="openSubject('${s.id}')">
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLORS[s.colorIdx%COLORS.length]};margin-right:8px;flex-shrink:0;vertical-align:middle"></span>${esc(s.name)}
+    </button>`).join('');
+  const remindBtn = document.getElementById('sb-remind-count');
+  if (remindBtn) remindBtn.title = due > 0 ? `${due} revision reminder${due===1?'':'s'} waiting` : 'No pending reminders';
+}
+
+// ══ SETTINGS ══
+function saveName() { const n = document.getElementById('settings-name').value.trim(); saveName2(n); buildSidebar(); toast('Name saved'); }
+
+
 function renderSessionLog(s, data) {
   const entries = data.history
     .filter(h => h.subjectId === s.id)
     .sort((a,b) => new Date(b.at) - new Date(a.at));
 
   const el = document.getElementById('session-log');
+  const countEl = document.getElementById('session-log-count');
+
   if (entries.length === 0) {
     el.innerHTML = `<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">No sessions logged yet.<br>Click "Log Session" to record your first one.</div></div>`;
+    if (countEl) countEl.textContent = '';
+    // Hide filter bar when no sessions
+    const fb = document.getElementById('session-filter-bar');
+    if (fb) fb.style.display = 'none';
     return;
   }
+
+  // Show filter bar and update count
+  const fb = document.getElementById('session-filter-bar');
+  if (fb) fb.style.display = 'flex';
+
+  // Build type counts for filter bar labels
+  const typeCounts = {};
+  entries.forEach(h => { const t = h.sessionType || 'none'; typeCounts[t] = (typeCounts[t]||0)+1; });
+  if (countEl) countEl.textContent = `(${entries.length})`;
 
   const today = todayISO();
 
@@ -1332,9 +1509,11 @@ function renderSessionLog(s, data) {
       remindBadge = `<span style="font-size:0.72rem;color:#aaa">✓ Revised</span>`;
     }
 
-    return `<div class="${entryClass}">
+    const typeBadge = sessionTypeBadge(h.sessionType);
+    return `<div class="${entryClass}" data-session-type="${h.sessionType || 'none'}">
       <div class="session-entry-header">
         <span class="session-date">${fmtDate(h.at)}</span>
+        ${typeBadge}
         ${remindBadge}
       </div>
 
@@ -1350,7 +1529,7 @@ function renderSessionLog(s, data) {
 
       ${h.notes ? `<div class="session-field">
         <div class="session-field-label">📝 Notes</div>
-        <div class="session-field-value" style="color:#666">${esc(h.notes)}</div>
+        <div class="session-field-value" style="color:var(--ink3)">${esc(h.notes)}</div>
       </div>` : ''}
 
       <div class="session-entry-footer">
@@ -1441,6 +1620,7 @@ function openCheckin() {
   document.getElementById('s-remind-on').checked = false;
   document.getElementById('s-remind-date').value = '';
   document.getElementById('remind-date-row').style.display = 'none';
+  clearSessionTypeButtons();
 
   const sel = document.getElementById('s-topic-sel');
   sel.innerHTML = '<option value="">— No specific topic —</option>' +
@@ -1472,6 +1652,10 @@ function openEditSession(sessionId) {
   document.getElementById('s-remind-date').value = h.remindOn || '';
   document.getElementById('remind-date-row').style.display = hasReminder ? 'block' : 'none';
 
+  // Restore session type
+  clearSessionTypeButtons();
+  if (h.sessionType) selectSessionType(h.sessionType);
+
   openModal('modal-session');
 }
 
@@ -1487,16 +1671,19 @@ function saveSession() {
 
   const data = getData();
 
+  const sessionType = _selectedSessionType || null;
+
   if (editingSessionId) {
     // EDIT existing
     const h = data.history.find(h => h.id === editingSessionId);
     if (!h) return;
-    h.stopped  = stopped;
-    h.next     = next;
-    h.notes    = notes;
-    h.topicId  = topicId || null;
-    h.remindOn = remindOn || null;
-    if (remindOn) h.remindDone = false; // re-activate if date changed
+    h.stopped     = stopped;
+    h.next        = next;
+    h.notes       = notes;
+    h.topicId     = topicId || null;
+    h.remindOn    = remindOn || null;
+    h.sessionType = sessionType;
+    if (remindOn) h.remindDone = false;
     saveData(data);
     closeModal('modal-session');
     renderSubjectDetail();
@@ -1520,6 +1707,7 @@ function saveSession() {
       subjectName: s.name,
       topicId: topicId || null,
       stopped, next, notes,
+      sessionType: sessionType,
       remindOn: remindOn || null,
       remindDone: false,
       at: ts()
@@ -1664,49 +1852,32 @@ function saveQuick() {
 }
 
 // ══ HISTORY ══
-function renderHistory() {
-  const data = getData();
-  const filter   = document.getElementById('history-filter');
-  const selected = filter.value;
-  filter.innerHTML = '<option value="">All subjects</option>' +
-    data.subjects.map(s => `<option value="${s.id}" ${s.id===selected?'selected':''}>${esc(s.name)}</option>`).join('');
+// Filter session log by type
+function filterSessions(type, btnEl) {
+  // Update active button
+  document.querySelectorAll('.session-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
 
-  let entries = selected ? data.history.filter(h => h.subjectId === selected) : data.history;
-  const list  = document.getElementById('history-list');
+  // Show/hide session entries
+  document.querySelectorAll('#session-log .session-entry').forEach(card => {
+    const cardType = card.dataset.sessionType || 'none';
+    const show = type === 'all' || cardType === type;
+    card.style.display = show ? '' : 'none';
+  });
 
-  if (entries.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No history yet.<br>Once you log sessions, your progress story will show up here.</div></div>`;
-    return;
+  // Update count label
+  const countEl = document.getElementById('session-log-count');
+  if (countEl) {
+    if (type === 'all') {
+      const total = document.querySelectorAll('#session-log .session-entry').length;
+      countEl.textContent = `(${total})`;
+    } else {
+      const visible = document.querySelectorAll('#session-log .session-entry[data-session-type="' + type + '"]').length;
+      const total   = document.querySelectorAll('#session-log .session-entry').length;
+      countEl.textContent = visible > 0 ? `(${visible} of ${total})` : `(none for this type)`;
+    }
   }
-
-  list.innerHTML = entries.map(h => {
-    const parts = [];
-    if (h.stopped) parts.push(`<div>📍 <strong>Stopped:</strong> ${esc(h.stopped)}</div>`);
-    if (h.next)    parts.push(`<div style="color:#2d6a4f">→ <strong>Next:</strong> ${esc(h.next)}</div>`);
-    if (h.notes)   parts.push(`<div style="color:#888">📝 ${esc(h.notes)}</div>`);
-    if (h.remindOn && !h.remindDone) parts.push(`<div style="color:#b5651d">🔔 Remind: ${fmtDateOnly(h.remindOn)}</div>`);
-    return `<div class="log-entry">
-      <div class="log-date">${fmtDate(h.at)} · <strong style="color:#333">${esc(h.subjectName)}</strong></div>
-      <div style="display:flex;flex-direction:column;gap:4px;margin-top:5px;line-height:1.5">${parts.join('')}</div>
-    </div>`;
-  }).join('');
 }
-
-// ══ SIDEBAR ══
-function buildSidebar() {
-  document.getElementById('sb-name').textContent = getName() || 'Student';
-  const data = getData();
-  const due = getDueReminders().length;
-  document.getElementById('sb-subjects').innerHTML = sortSubjects(data.subjects, data.history).map(s =>
-    `<button class="sidebar-btn sb-subject-btn ${currentSubjectId===s.id?'active':''}" data-id="${s.id}" onclick="openSubject('${s.id}')">
-      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLORS[s.colorIdx%COLORS.length]};margin-right:8px;flex-shrink:0;vertical-align:middle"></span>${esc(s.name)}
-    </button>`).join('');
-  const remindBtn = document.getElementById('sb-remind-count');
-  if (remindBtn) remindBtn.title = due > 0 ? `${due} revision reminder${due===1?'':'s'} waiting` : 'No pending reminders';
-}
-
-// ══ SETTINGS ══
-function saveName() { const n = document.getElementById('settings-name').value.trim(); saveName2(n); buildSidebar(); toast('Name saved'); }
 
 // ══ DARK MODE ══
 function isDark() { return localStorage.getItem('st2_dark') === '1'; }
@@ -1882,6 +2053,7 @@ function saveFabLog() {
   data.history.unshift({
     id: uid(), subjectId, subjectName: s.name,
     topicId: null, stopped, next, notes,
+    sessionType: null,  // FAB is a quick log — no type
     remindOn: null, remindDone: false, at: ts()
   });
   if (data.history.length > 300) data.history.length = 300;
