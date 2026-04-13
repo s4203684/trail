@@ -76,19 +76,14 @@
     .subject-card:hover, .session-entry:hover, .insight-card:hover { transform:translateY(-1px); }
     .smart-pill { display:inline-flex; align-items:center; gap:6px; font-size:0.72rem; padding:4px 10px; border-radius:999px; font-weight:600; }
 
-    /* ── Session type chips ── */
+    /* ── Session type chips (topic-name based, colour assigned dynamically) ── */
     .type-chip {
       display:inline-flex; align-items:center; gap:5px;
       font-size:0.72rem; padding:3px 10px; border-radius:999px;
       font-weight:600; cursor:default; white-space:nowrap;
     }
-    .type-learning   { background:#e4f0f8; color:#1d5f8a; }
-    .type-assignment { background:#fce8e4; color:#c0392b; }
-    .type-revision   { background:#fdf0e0; color:#b5651d; }
-    .type-lab        { background:#f0e8ff; color:#6b21b0; }
-    .type-other      { background:var(--bg4); color:var(--ink3); }
 
-    /* Type selector buttons in modal */
+    /* Topic chip buttons in session modal */
     .type-btn-group { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:4px; }
     .type-btn {
       padding:6px 14px; border-radius:999px; border:1.5px solid var(--border2);
@@ -96,13 +91,8 @@
       background:var(--bg4); color:var(--ink3);
       transition:all 0.15s;
     }
-    .type-btn:hover { border-color:#2d6a4f; color:#2d6a4f; }
-    .type-btn.selected { border-color:transparent; }
-    .type-btn.selected.t-learning   { background:#e4f0f8; color:#1d5f8a; border-color:#1d5f8a; }
-    .type-btn.selected.t-assignment { background:#fce8e4; color:#c0392b; border-color:#c0392b; }
-    .type-btn.selected.t-revision   { background:#fdf0e0; color:#b5651d; border-color:#b5651d; }
-    .type-btn.selected.t-lab        { background:#f0e8ff; color:#6b21b0; border-color:#6b21b0; }
-    .type-btn.selected.t-other      { background:var(--bg3); color:var(--ink2); border-color:var(--border); }
+    .type-btn:hover { border-color:#2d6a4f; color:#2d6a4f; background:var(--bg3); }
+    .type-btn.selected { font-weight:700; }
 
     /* Session filter tabs */
     .session-filter-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
@@ -113,6 +103,12 @@
     }
     .session-filter-btn:hover { color:var(--ink); border-color:var(--border); }
     .session-filter-btn.active { background:#2d6a4f; color:#fff; border-color:#2d6a4f; }
+    /* Topic-coloured active state for topic filter buttons */
+    .session-filter-btn[data-topic-filter].active {
+      background: var(--chip-bg, #2d6a4f);
+      color: var(--chip-color, #fff);
+      border-color: var(--chip-color, #2d6a4f);
+    }
     .smart-danger { background:#fce8e4; color:#c0392b; }
     .smart-warn { background:#fdf0e0; color:#b5651d; }
     .smart-good { background:#d8f3dc; color:#2d6a4f; }
@@ -478,12 +474,7 @@
         <span style="font-size:0.78rem;color:var(--ink5);font-weight:400" id="session-log-count"></span>
       </div>
       <div class="session-filter-bar" id="session-filter-bar">
-        <button class="session-filter-btn active" onclick="filterSessions('all', this)">All</button>
-        <button class="session-filter-btn" onclick="filterSessions('learning', this)">📖 Learning</button>
-        <button class="session-filter-btn" onclick="filterSessions('assignment', this)">📝 Assignment</button>
-        <button class="session-filter-btn" onclick="filterSessions('revision', this)">🔁 Revision</button>
-        <button class="session-filter-btn" onclick="filterSessions('lab', this)">🧪 Lab</button>
-        <button class="session-filter-btn" onclick="filterSessions('other', this)">Other</button>
+        <!-- Dynamically built by buildSessionFilterBar() based on your topics -->
       </div>
       <div id="session-log"></div>
     </div>
@@ -651,21 +642,15 @@
       <textarea id="s-notes" placeholder="e.g. Still unclear on how async/await works inside loops…" style="min-height:54px"></textarea>
     </div>
 
-    <div class="field">
-      <label>Session type — what kind of work was this?</label>
-      <div class="type-btn-group">
-        <button type="button" class="type-btn t-learning"   onclick="selectSessionType('learning')"   id="stype-learning">📖 Learning</button>
-        <button type="button" class="type-btn t-assignment" onclick="selectSessionType('assignment')" id="stype-assignment">📝 Assignment</button>
-        <button type="button" class="type-btn t-revision"   onclick="selectSessionType('revision')"   id="stype-revision">🔁 Revision</button>
-        <button type="button" class="type-btn t-lab"        onclick="selectSessionType('lab')"        id="stype-lab">🧪 Lab / Practice</button>
-        <button type="button" class="type-btn t-other"      onclick="selectSessionType('other')"      id="stype-other">• Other</button>
-      </div>
+    <div class="field" id="s-topic-chips-wrap" style="display:none">
+      <label>What was this session for? <span style="color:var(--ink5);font-weight:400">(pick a topic)</span></label>
+      <div class="type-btn-group" id="s-topic-chips"></div>
     </div>
 
     <div class="row" style="margin-bottom:14px">
       <div class="field flex1" style="margin:0">
-        <label>Topic <span style="color:#aaa;font-weight:400">(optional)</span></label>
-        <select id="s-topic-sel"><option value="">— No specific topic —</option></select>
+        <label>Topic <span style="color:var(--ink5);font-weight:400">(optional — or pick above)</span></label>
+        <select id="s-topic-sel" onchange="syncTopicChipFromDropdown()"><option value="">— No specific topic —</option></select>
       </div>
       <div class="field" style="margin:0;width:150px">
         <label>Topic status</label>
@@ -1122,13 +1107,12 @@ function renderSubjects() {
       ? `<div class="insight-text" style="color:#c0392b;margin-top:4px">⚠ Not touched: ${weekly.ignoredSubjects.map(n => esc(n)).join(', ')}</div>`
       : `<div class="insight-text" style="color:#2d6a4f;margin-top:4px">✓ All active subjects covered</div>`;
 
-    // Build type breakdown pills
+    // Build type breakdown pills using topic names
     const typeBreakdown = Object.entries(weekly.typeCounts || {})
       .filter(([,count]) => count > 0)
-      .map(([type, count]) => {
-        const meta = SESSION_TYPES[type];
-        if (!meta) return '';
-        return `<span class="type-chip ${meta.cls}">${meta.icon} ${count} ${meta.label}</span>`;
+      .map(([topicName, count]) => {
+        const c = getTopicChipColor(topicName);
+        return `<span class="type-chip" style="background:${c.bg};color:${c.color}">${count}× ${esc(topicName)}</span>`;
       }).join('');
 
     weeklyEl.innerHTML = `<div class="insight-card summary">
@@ -1382,38 +1366,122 @@ function clearSubjectDeadline() {
 }
 
 // ══ SESSION TYPE SYSTEM ══
-const SESSION_TYPES = {
-  learning:   { label:'Learning',      icon:'📖', cls:'type-learning'   },
-  assignment: { label:'Assignment',    icon:'📝', cls:'type-assignment' },
-  revision:   { label:'Revision',      icon:'🔁', cls:'type-revision'   },
-  lab:        { label:'Lab / Practice',icon:'🧪', cls:'type-lab'        },
-  other:      { label:'Other',         icon:'•',  cls:'type-other'      },
-};
+// ══ TOPIC-BASED SESSION TYPE SYSTEM ══
+// sessionType is now stored as the topic NAME (string), not a fixed key.
+// This lets each user define their own "types" through their topics.
 
-function sessionTypeBadge(type) {
-  if (!type || !SESSION_TYPES[type]) return '';
-  const t = SESSION_TYPES[type];
-  return `<span class="type-chip ${t.cls}">${t.icon} ${t.label}</span>`;
+// Colour palette cycling for topic chips — 8 distinct colours
+const TOPIC_CHIP_COLORS = [
+  { bg:'#e4f0f8', color:'#1d5f8a' },   // blue
+  { bg:'#fce8e4', color:'#c0392b' },   // red
+  { bg:'#d8f3dc', color:'#2d6a4f' },   // green
+  { bg:'#fdf0e0', color:'#b5651d' },   // amber
+  { bg:'#f0e8ff', color:'#6b21b0' },   // purple
+  { bg:'#e8f8f5', color:'#148f77' },   // teal
+  { bg:'#fef9e7', color:'#9a7d0a' },   // gold
+  { bg:'#f5eef8', color:'#7d3c98' },   // violet
+];
+
+// Cache colour assignments per topic name so they stay consistent
+const _topicColorCache = {};
+let _topicColorIdx = 0;
+function getTopicChipColor(topicName) {
+  if (!_topicColorCache[topicName]) {
+    _topicColorCache[topicName] = TOPIC_CHIP_COLORS[_topicColorIdx % TOPIC_CHIP_COLORS.length];
+    _topicColorIdx++;
+  }
+  return _topicColorCache[topicName];
 }
 
-// Currently selected type in the modal
-let _selectedSessionType = '';
+function sessionTypeBadge(sessionType) {
+  if (!sessionType) return '';
+  const c = getTopicChipColor(sessionType);
+  return `<span class="type-chip" style="background:${c.bg};color:${c.color}">${esc(sessionType)}</span>`;
+}
 
-function selectSessionType(type) {
-  _selectedSessionType = type;
-  // Update button states
-  Object.keys(SESSION_TYPES).forEach(k => {
-    const btn = document.getElementById('stype-' + k);
-    if (!btn) return;
-    btn.classList.toggle('selected', k === type);
+// Build the topic chip buttons inside the modal
+function buildTopicChips(topics, selectedTopicId) {
+  const wrap = document.getElementById('s-topic-chips-wrap');
+  const container = document.getElementById('s-topic-chips');
+  if (!wrap || !container) return;
+
+  if (!topics || topics.length === 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  wrap.style.display = 'block';
+  container.innerHTML = topics.map(t => {
+    const c = getTopicChipColor(t.name);
+    const isSelected = t.id === selectedTopicId;
+    return `<button type="button"
+      class="type-btn${isSelected ? ' selected' : ''}"
+      id="tchip-${t.id}"
+      data-topic-id="${t.id}"
+      data-topic-name="${esc(t.name)}"
+      style="${isSelected ? `background:${c.bg};color:${c.color};border-color:${c.color}` : ''}"
+      onclick="selectTopicChip('${t.id}', '${esc(t.name)}', '${c.bg}', '${c.color}')">
+      ${esc(t.name)}
+    </button>`;
+  }).join('');
+}
+
+function selectTopicChip(topicId, topicName, bg, color) {
+  // Toggle: clicking the selected chip deselects it
+  const isAlreadySelected = document.getElementById('s-topic-sel').value === topicId;
+
+  // Clear all chip selections
+  document.querySelectorAll('#s-topic-chips .type-btn').forEach(btn => {
+    btn.classList.remove('selected');
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
   });
+
+  if (isAlreadySelected) {
+    // Deselect
+    document.getElementById('s-topic-sel').value = '';
+  } else {
+    // Select this chip
+    const btn = document.getElementById('tchip-' + topicId);
+    if (btn) {
+      btn.classList.add('selected');
+      btn.style.background = bg;
+      btn.style.color = color;
+      btn.style.borderColor = color;
+    }
+    // Sync dropdown
+    document.getElementById('s-topic-sel').value = topicId;
+  }
+}
+
+function syncTopicChipFromDropdown() {
+  // When user changes the dropdown, highlight the matching chip
+  const topicId = document.getElementById('s-topic-sel').value;
+  document.querySelectorAll('#s-topic-chips .type-btn').forEach(btn => {
+    btn.classList.remove('selected');
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  });
+  if (topicId) {
+    const btn = document.getElementById('tchip-' + topicId);
+    if (btn) {
+      const c = getTopicChipColor(btn.dataset.topicName);
+      btn.classList.add('selected');
+      btn.style.background = c.bg;
+      btn.style.color = c.color;
+      btn.style.borderColor = c.color;
+    }
+  }
 }
 
 function clearSessionTypeButtons() {
-  _selectedSessionType = '';
-  Object.keys(SESSION_TYPES).forEach(k => {
-    const btn = document.getElementById('stype-' + k);
-    if (btn) btn.classList.remove('selected');
+  document.querySelectorAll('#s-topic-chips .type-btn').forEach(btn => {
+    btn.classList.remove('selected');
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
   });
 }
 
@@ -1484,13 +1552,8 @@ function renderSessionLog(s, data) {
     return;
   }
 
-  // Show filter bar and update count
-  const fb = document.getElementById('session-filter-bar');
-  if (fb) fb.style.display = 'flex';
-
-  // Build type counts for filter bar labels
-  const typeCounts = {};
-  entries.forEach(h => { const t = h.sessionType || 'none'; typeCounts[t] = (typeCounts[t]||0)+1; });
+  // Build dynamic filter bar from this subject's topics + actual session data
+  buildSessionFilterBar(entries, s.topics);
   if (countEl) countEl.textContent = `(${entries.length})`;
 
   const today = todayISO();
@@ -1620,11 +1683,12 @@ function openCheckin() {
   document.getElementById('s-remind-on').checked = false;
   document.getElementById('s-remind-date').value = '';
   document.getElementById('remind-date-row').style.display = 'none';
-  clearSessionTypeButtons();
-
   const sel = document.getElementById('s-topic-sel');
   sel.innerHTML = '<option value="">— No specific topic —</option>' +
     s.topics.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+
+  // Build topic chips and clear selection
+  buildTopicChips(s.topics, null);
 
   openModal('modal-session');
 }
@@ -1652,9 +1716,10 @@ function openEditSession(sessionId) {
   document.getElementById('s-remind-date').value = h.remindOn || '';
   document.getElementById('remind-date-row').style.display = hasReminder ? 'block' : 'none';
 
-  // Restore session type
-  clearSessionTypeButtons();
-  if (h.sessionType) selectSessionType(h.sessionType);
+  // Build chips and restore which topic was selected
+  const editSubject = data.subjects.find(sub => sub.id === h.subjectId);
+  const editTopics = editSubject ? editSubject.topics : [];
+  buildTopicChips(editTopics, h.topicId || null);
 
   openModal('modal-session');
 }
@@ -1671,9 +1736,15 @@ function saveSession() {
 
   const data = getData();
 
-  const sessionType = _selectedSessionType || null;
+  // sessionType = the topic name (derived from the selected topicId)
+  const selectedTopic = topicId
+    ? (() => { const sub = data.subjects.find(s => s.id === currentSubjectId || s.id === (data.history.find(h=>h.id===editingSessionId)||{}).subjectId); return sub ? sub.topics.find(t => t.id === topicId) : null; })()
+    : null;
+  const sessionType = selectedTopic ? selectedTopic.name : null;
 
   if (editingSessionId) {
+    const activeSubject = data.subjects.find(s => s.topics.some(t => t.id === topicId)) || data.subjects.find(s => s.id === (data.history.find(h=>h.id===editingSessionId)||{}).subjectId);
+    const editTopic = topicId && activeSubject ? activeSubject.topics.find(t => t.id === topicId) : null;
     // EDIT existing
     const h = data.history.find(h => h.id === editingSessionId);
     if (!h) return;
@@ -1682,7 +1753,7 @@ function saveSession() {
     h.notes       = notes;
     h.topicId     = topicId || null;
     h.remindOn    = remindOn || null;
-    h.sessionType = sessionType;
+    h.sessionType = editTopic ? editTopic.name : (topicId ? h.sessionType : null);
     if (remindOn) h.remindDone = false;
     saveData(data);
     closeModal('modal-session');
@@ -1701,13 +1772,14 @@ function saveSession() {
       const t = s.topics.find(t => t.id === topicId);
       if (t) { t.status = status; if (notes) t.note = notes; }
     }
+    const newTopic = topicId ? s.topics.find(t => t.id === topicId) : null;
     data.history.unshift({
       id: uid(),
       subjectId: currentSubjectId,
       subjectName: s.name,
       topicId: topicId || null,
       stopped, next, notes,
-      sessionType: sessionType,
+      sessionType: newTopic ? newTopic.name : null,
       remindOn: remindOn || null,
       remindDone: false,
       at: ts()
@@ -1852,31 +1924,57 @@ function saveQuick() {
 }
 
 // ══ HISTORY ══
-// Filter session log by type
-function filterSessions(type, btnEl) {
-  // Update active button
+// Filter session log by topic name
+function filterSessions(topicName, btnEl) {
   document.querySelectorAll('.session-filter-btn').forEach(b => b.classList.remove('active'));
   if (btnEl) btnEl.classList.add('active');
 
-  // Show/hide session entries
   document.querySelectorAll('#session-log .session-entry').forEach(card => {
-    const cardType = card.dataset.sessionType || 'none';
-    const show = type === 'all' || cardType === type;
+    const cardType = card.dataset.sessionType || '';
+    const show = topicName === 'all' || cardType === topicName;
     card.style.display = show ? '' : 'none';
   });
 
-  // Update count label
   const countEl = document.getElementById('session-log-count');
   if (countEl) {
-    if (type === 'all') {
-      const total = document.querySelectorAll('#session-log .session-entry').length;
+    const total   = document.querySelectorAll('#session-log .session-entry').length;
+    if (topicName === 'all') {
       countEl.textContent = `(${total})`;
     } else {
-      const visible = document.querySelectorAll('#session-log .session-entry[data-session-type="' + type + '"]').length;
-      const total   = document.querySelectorAll('#session-log .session-entry').length;
-      countEl.textContent = visible > 0 ? `(${visible} of ${total})` : `(none for this type)`;
+      const visible = document.querySelectorAll(`#session-log .session-entry[data-session-type="${topicName}"]`).length;
+      countEl.textContent = visible > 0 ? `(${visible} of ${total})` : `(none)`;
     }
   }
+}
+
+// Build dynamic filter bar based on this subject's topics + sessions
+function buildSessionFilterBar(entries, topics) {
+  const bar = document.getElementById('session-filter-bar');
+  if (!bar) return;
+
+  // Find which topic names actually appear in sessions
+  const usedTypes = new Set(entries.map(h => h.sessionType).filter(Boolean));
+  const untypedCount = entries.filter(h => !h.sessionType).length;
+
+  let html = `<button class="session-filter-btn active" onclick="filterSessions('all', this)">All (${entries.length})</button>`;
+
+  // Show a filter button for each topic that has at least one session
+  topics.forEach(t => {
+    if (!usedTypes.has(t.name)) return;
+    const count = entries.filter(h => h.sessionType === t.name).length;
+    const c = getTopicChipColor(t.name);
+    html += `<button class="session-filter-btn"
+      style="--chip-bg:${c.bg};--chip-color:${c.color}"
+      onclick="filterSessions('${esc(t.name)}', this)"
+      data-topic-filter="${esc(t.name)}">${esc(t.name)} (${count})</button>`;
+  });
+
+  // Add "No topic" filter if any untyped sessions exist
+  if (untypedCount > 0) {
+    html += `<button class="session-filter-btn" onclick="filterSessions('', this)">No topic (${untypedCount})</button>`;
+  }
+
+  bar.innerHTML = html;
 }
 
 // ══ DARK MODE ══
