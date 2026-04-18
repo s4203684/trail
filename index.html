@@ -429,6 +429,7 @@
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
           <button class="btn btn-gray btn-sm" onclick="openAddTopic()">+ Topic</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportSubjectSummary()" title="Export summary">📄 Export</button>
           <button class="btn btn-green" onclick="openCheckin()">+ Log Session</button>
           <button class="btn btn-red btn-sm" onclick="deleteCurrentSubject()">Delete</button>
         </div>
@@ -444,7 +445,21 @@
         </div>
       </div>
 
-      <div style="background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:18px 20px;margin-bottom:16px">
+      <!-- Pinned Note -->
+      <div id="pinned-note-card" style="background:#fefce8;border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:none">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div style="flex:1">
+            <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:#92400e;margin-bottom:6px;font-weight:600">📌 Pinned Note</div>
+            <div id="pinned-note-text" style="font-size:0.9rem;color:#78350f;line-height:1.55;white-space:pre-wrap"></div>
+          </div>
+          <button class="btn btn-sm" onclick="openPinnedNoteEdit()" style="background:#fde68a;color:#92400e;border:none;flex-shrink:0" title="Edit note">✏</button>
+        </div>
+      </div>
+      <div id="pinned-note-empty" style="margin-bottom:16px">
+        <button class="btn btn-ghost btn-sm" onclick="openPinnedNoteEdit()" style="font-size:0.8rem">📌 Add pinned note</button>
+      </div>
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px">
         <div class="section-head" style="margin-bottom:14px">Deadline</div>
         <div class="row">
           <div class="field flex1" style="margin:0">
@@ -592,6 +607,17 @@
   </main>
 </div>
 
+<!-- MODAL: Colour Picker -->
+<div class="overlay" id="modal-color-picker">
+  <div class="modal" style="max-width:340px">
+    <h2>Choose Colour</h2>
+    <div id="color-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;justify-content:center"></div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="closeModal('modal-color-picker')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Add Subject -->
 <div class="overlay" id="modal-add-subject">
   <div class="modal">
@@ -610,6 +636,22 @@
     <div class="modal-footer">
       <button class="btn btn-gray" onclick="closeModal('modal-add-subject')">Cancel</button>
       <button class="btn btn-green" onclick="addSubject()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Pinned Note -->
+<div class="overlay" id="modal-pinned-note">
+  <div class="modal">
+    <h2>📌 Pinned Note</h2>
+    <p style="font-size:0.85rem;color:var(--ink4);margin-bottom:16px">Always visible at the top of this subject. Use it for exam room, assignment link, tutor name, important reminders — anything you need to see every time.</p>
+    <div class="field">
+      <textarea id="pinned-note-input" rows="5" placeholder="e.g. Exam: Room B12, 14 May 9am&#10;Assignment 2 link: canvas.rmit.edu/...&#10;Tutor: Dr. Smith, Thu 2pm"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-red btn-sm" onclick="clearPinnedNote()" style="margin-right:auto">Clear note</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-pinned-note')">Cancel</button>
+      <button class="btn btn-green" onclick="savePinnedNote()">Save</button>
     </div>
   </div>
 </div>
@@ -776,6 +818,8 @@ function normalizeData(raw) {
         note: t && t.note ? t.note : ''
       })) : [],
       stopped: s && s.stopped ? s.stopped : '',
+      pinnedNote: s && s.pinnedNote ? s.pinnedNote : null,
+      customColor: s && s.customColor ? s.customColor : null,
       nextTodo: s && s.nextTodo ? s.nextTodo : '',
       createdAt: s && s.createdAt ? s.createdAt : ts(),
       deadlineTitle: s && s.deadlineTitle ? s.deadlineTitle : '',
@@ -1166,7 +1210,7 @@ function renderSubjects() {
   }
 
   list.innerHTML = orderedSubjects.map(s => {
-    const color = COLORS[s.colorIdx % COLORS.length];
+    const color = s.customColor || COLORS[s.colorIdx % COLORS.length];
     const sm    = STATUS_META[s.status || 'active'];
     const last  = data.history.filter(h => h.subjectId === s.id).sort((a,b) => new Date(b.at)-new Date(a.at))[0];
     const days  = last ? daysSince(last.at) : null;
@@ -1207,7 +1251,7 @@ function renderSubjects() {
 
     return `<div class="subject-card${urgentClass}">
       <div class="subject-card-top">
-        <div class="subject-dot" style="background:${color}"></div>
+        <div class="subject-dot" style="background:${color};cursor:pointer;border:2px solid transparent;box-sizing:content-box" onclick="openColorPicker('${s.id}')" title="Change colour"></div>
         <div class="subject-name" onclick="openSubject('${s.id}')">${esc(s.name)}</div>
         <button class="subject-status ${sm.cls}" onclick="cycleStatusFromList('${s.id}')" title="Click to change">${sm.label}</button>
         ${daysBadge} ${dueBadge} ${deadlineBadge(s)}
@@ -1305,6 +1349,19 @@ function renderSubjectDetail() {
   const wsEl = document.getElementById('ws-stopped');
   wsEl.textContent = s.stopped || 'Nothing recorded yet — click Log Session';
   wsEl.style.color = s.stopped ? '#fff' : '#555';
+
+  // Pinned note
+  const noteCard  = document.getElementById('pinned-note-card');
+  const noteEmpty = document.getElementById('pinned-note-empty');
+  const noteText  = document.getElementById('pinned-note-text');
+  if (s.pinnedNote) {
+    if (noteCard)  { noteCard.style.display  = 'block'; }
+    if (noteEmpty) { noteEmpty.style.display = 'none'; }
+    if (noteText)  { noteText.textContent = s.pinnedNote; }
+  } else {
+    if (noteCard)  { noteCard.style.display  = 'none'; }
+    if (noteEmpty) { noteEmpty.style.display = 'block'; }
+  }
 
   const wsNext = document.getElementById('ws-next');
   if (s.nextTodo) { wsNext.style.display='block'; document.getElementById('ws-next-text').textContent = s.nextTodo; }
@@ -1553,7 +1610,7 @@ function buildSidebar() {
   const due = getDueReminders().length;
   document.getElementById('sb-subjects').innerHTML = sortSubjects(data.subjects, data.history).map(s =>
     `<button class="sidebar-btn sb-subject-btn ${currentSubjectId===s.id?'active':''}" data-id="${s.id}" onclick="openSubject('${s.id}')">
-      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLORS[s.colorIdx%COLORS.length]};margin-right:8px;flex-shrink:0;vertical-align:middle"></span>${esc(s.name)}
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${(s.customColor || COLORS[s.colorIdx%COLORS.length])};margin-right:8px;flex-shrink:0;vertical-align:middle"></span>${esc(s.name)}
     </button>`).join('');
   const remindBtn = document.getElementById('sb-remind-count');
   if (remindBtn) remindBtn.title = due > 0 ? `${due} revision reminder${due===1?'':'s'} waiting` : 'No pending reminders';
@@ -1561,6 +1618,164 @@ function buildSidebar() {
 
 // ══ SETTINGS ══
 function saveName() { const n = document.getElementById('settings-name').value.trim(); saveName2(n); buildSidebar(); toast('Name saved'); }
+
+// ══ PINNED NOTE ══
+function openPinnedNoteEdit() {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  document.getElementById('pinned-note-input').value = s.pinnedNote || '';
+  openModal('modal-pinned-note');
+}
+
+function savePinnedNote() {
+  const note = document.getElementById('pinned-note-input').value.trim();
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  s.pinnedNote = note || null;
+  saveData(data);
+  closeModal('modal-pinned-note');
+  renderSubjectDetail();
+  toast(note ? 'Note pinned ✓' : 'Note cleared');
+}
+
+function clearPinnedNote() {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  s.pinnedNote = null;
+  saveData(data);
+  closeModal('modal-pinned-note');
+  renderSubjectDetail();
+  toast('Note cleared');
+}
+
+// ══ COLOUR PICKER ══
+const SUBJECT_COLORS = [
+  '#2d6a4f','#1d5f8a','#7b4dbd','#b5651d','#c0392b','#16a085',
+  '#8b4513','#555','#d4a017','#2471a3','#a93226','#117a65',
+  '#1a5276','#6c3483','#784212','#1e8449','#2e4057','#922b21',
+];
+
+let _colorPickerSubjectId = null;
+
+function openColorPicker(subjectId) {
+  _colorPickerSubjectId = subjectId;
+  const data = getData();
+  const s = data.subjects.find(s => s.id === subjectId);
+  const currentColor = COLORS[s ? s.colorIdx % COLORS.length : 0];
+
+  const swatches = document.getElementById('color-swatches');
+  swatches.innerHTML = SUBJECT_COLORS.map((c, i) => `
+    <div onclick="pickColor(${i}, '${c}')"
+      style="width:44px;height:44px;border-radius:50%;background:${c};cursor:pointer;
+        border:3px solid ${c === currentColor ? '#fff' : 'transparent'};
+        box-shadow:${c === currentColor ? '0 0 0 3px ' + c + ', 0 0 0 5px rgba(0,0,0,0.15)' : '0 2px 6px rgba(0,0,0,0.15)'};
+        transition:transform 0.15s;"
+      onmouseover="this.style.transform='scale(1.15)'"
+      onmouseout="this.style.transform='scale(1)'"
+      title="${c}"></div>`).join('');
+
+  openModal('modal-color-picker');
+}
+
+function pickColor(colorIdx, hex) {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === _colorPickerSubjectId);
+  if (!s) return;
+  // Store the colour as a custom hex instead of index
+  s.customColor = hex;
+  s.colorIdx = colorIdx; // keep index for fallback
+  saveData(data);
+  closeModal('modal-color-picker');
+  renderSubjects();
+  buildSidebar();
+  toast('Colour updated');
+}
+
+// ══ EXPORT SUBJECT SUMMARY ══
+function exportSubjectSummary() {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+
+  const sessions = data.history
+    .filter(h => h.subjectId === s.id)
+    .sort((a,b) => new Date(b.at) - new Date(a.at));
+
+  const lines = [];
+  const now = new Date().toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+  lines.push('═'.repeat(60));
+  lines.push(`STUDY SUMMARY: ${s.name.toUpperCase()}`);
+  lines.push(`Exported: ${now}`);
+  lines.push('═'.repeat(60));
+  lines.push('');
+
+  // Pinned note
+  if (s.pinnedNote) {
+    lines.push('📌 PINNED NOTE');
+    lines.push('-'.repeat(40));
+    lines.push(s.pinnedNote);
+    lines.push('');
+  }
+
+  // Deadline
+  if (s.deadlineDate) {
+    const diff = daysUntil(s.deadlineDate);
+    const timing = diff === null ? '' : diff <= 0 ? ' (OVERDUE)' : diff === 0 ? ' (TODAY)' : ` (${diff} days away)`;
+    lines.push(`⏰ DEADLINE: ${s.deadlineTitle || 'Deadline'} — ${fmtDateOnly(s.deadlineDate)}${timing}`);
+    lines.push('');
+  }
+
+  // Where stopped + next
+  lines.push('📍 WHERE I STOPPED');
+  lines.push('-'.repeat(40));
+  lines.push(s.stopped || 'Not recorded');
+  lines.push('');
+  lines.push('→ NEXT UP');
+  lines.push(s.nextTodo || 'Not recorded');
+  lines.push('');
+
+  // Topics
+  if (s.topics.length > 0) {
+    lines.push('📚 TOPICS');
+    lines.push('-'.repeat(40));
+    s.topics.forEach(t => {
+      const statusIcon = { done:'✓', doing:'▶', stuck:'⚠', todo:'○' }[t.status] || '○';
+      lines.push(`  ${statusIcon} ${t.name} [${t.status.toUpperCase()}]`);
+    });
+    lines.push('');
+  }
+
+  // Session log
+  if (sessions.length > 0) {
+    lines.push(`📋 SESSION LOG (${sessions.length} sessions)`);
+    lines.push('-'.repeat(40));
+    sessions.forEach((h, i) => {
+      lines.push('');
+      lines.push(`[${i+1}] ${fmtDate(h.at)}${h.sessionType ? ' · ' + h.sessionType : ''}${h.duration ? ' · ' + formatDuration(h.duration) : ''}`);
+      if (h.stopped) lines.push(`  Stopped at: ${h.stopped}`);
+      if (h.next)    lines.push(`  Next:       ${h.next}`);
+      if (h.notes)   lines.push(`  Notes:      ${h.notes}`);
+    });
+    lines.push('');
+  }
+
+  lines.push('═'.repeat(60));
+  lines.push('Generated by StudyTrail');
+
+  const text = lines.join('\n');
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `StudyTrail-${s.name.replace(/[^a-z0-9]/gi,'_')}-${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`Summary exported ✓`);
+}
 
 
 function renderSessionLog(s, data) {
