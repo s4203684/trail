@@ -193,6 +193,8 @@
 
     /* ── Topics ── */
     .topic-item { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-bottom:7px; display:flex; align-items:center; gap:10px; }
+    .topic-item.drag-over { border-color:#2d6a4f; background:var(--bg3); }
+    .topic-item.dragging  { opacity:0.4; }
     .topic-name { flex:1; font-size:0.9rem; font-weight:500; }
     .topic-note { font-size:0.76rem; color:var(--ink4); font-style:italic; margin-top:2px; }
     select.status-sel { width:auto; padding:4px 26px 4px 9px; font-size:0.78rem; }
@@ -627,7 +629,10 @@
 <!-- MODAL: Log / Edit Session -->
 <div class="overlay" id="modal-session">
   <div class="modal">
-    <h2 id="session-modal-title">Log Session</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
+      <h2 id="session-modal-title" style="margin:0">Log Session</h2>
+      <div id="session-timer-display" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.85rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink3)">⏱ <span id="session-timer-text">00:00</span></div>
+    </div>
 
     <div class="field">
       <label>What did you do / where did you stop?</label>
@@ -683,7 +688,7 @@
     </div>
 
     <div class="modal-footer">
-      <button class="btn btn-gray" onclick="closeModal('modal-session')">Cancel</button>
+      <button class="btn btn-gray" onclick="stopSessionTimer();closeModal('modal-session')">Cancel</button>
       <button class="btn btn-green" id="session-save-btn" onclick="saveSession()">Save Session</button>
     </div>
   </div>
@@ -785,6 +790,7 @@ function normalizeData(raw) {
       next: h && h.next ? h.next : '',
       notes: h && h.notes ? h.notes : '',
       sessionType: h && h.sessionType ? h.sessionType : null,
+      duration: h && h.duration ? h.duration : null,
       remindOn: h && h.remindOn ? h.remindOn : null,
       remindDone: !!(h && h.remindDone),
       at: h && h.at ? h.at : ts()
@@ -1177,8 +1183,19 @@ function renderSubjects() {
     const total = s.topics.length;
     const done  = s.topics.filter(t => t.status==='done').length;
     const stuck = s.topics.filter(t => t.status==='stuck').length;
-    const topicLine = total > 0 ? `${done}/${total} topics done${stuck>0?` · <span style="color:#c0392b">${stuck} stuck</span>`:''}` : 'No topics yet';
+    const doing = s.topics.filter(t => t.status==='doing').length;
     const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    // Per-topic mini progress — show each topic as a small chip
+    const topicChipsHtml = total > 0 ? s.topics.map(t => {
+      const statusDot = t.status === 'done'  ? `style="background:#2d6a4f;color:#fff"`
+                      : t.status === 'doing' ? `style="background:#e4f0f8;color:#1d5f8a;border:1px solid #1d5f8a"`
+                      : t.status === 'stuck' ? `style="background:#fce8e4;color:#c0392b;border:1px solid #c0392b"`
+                      : `style="background:var(--bg4);color:var(--ink4)"`;
+      const icon = t.status === 'done' ? '✓ ' : t.status === 'stuck' ? '⚠ ' : t.status === 'doing' ? '▶ ' : '';
+      return `<span style="font-size:0.7rem;padding:2px 8px;border-radius:20px;white-space:nowrap;font-weight:500;${statusDot.slice(7,-1)}">${icon}${esc(t.name)}</span>`;
+    }).join('') : '';
+    const topicLine = total > 0 ? `${done}/${total} done` : 'No topics yet';
 
     // Count due reminders for this subject
     const subjectDue = due.filter(h => h.subjectId === s.id).length;
@@ -1199,8 +1216,9 @@ function renderSubjects() {
       ${s.stopped ? `<div class="subject-stopped filled">📍 ${esc(s.stopped)}</div>` : `<div class="subject-stopped" style="color:#bbb">No progress recorded yet — log one session to make this subject smarter.</div>`}
       ${s.nextTodo ? `<div class="subject-next">→ ${esc(s.nextTodo)}</div>` : `<div class="subject-next" style="background:var(--bg3);color:var(--ink4)">→ Add a next step to make continuing easier</div>`}
       <div class="progress-row"><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div><div style="font-size:0.75rem;color:#888;min-width:44px;text-align:right">${progress}%</div></div>
+      ${topicChipsHtml ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${topicChipsHtml}</div>` : ''}
       <div class="subject-card-footer">
-        <div style="font-size:0.75rem;color:#aaa">${topicLine}</div>
+        <div style="font-size:0.75rem;color:var(--ink5)">${topicLine}</div>
         <div class="action-row">
           <button class="btn btn-ghost btn-sm" onclick="openSubject('${s.id}')">▶ Continue</button>
           <button class="btn btn-green btn-sm" onclick="quickLogForSubject('${s.id}')">➕ Log session</button>
@@ -1319,10 +1337,19 @@ function renderSubjectDetail() {
   } else {
     const done = s.topics.filter(t => t.status==='done').length;
     countEl.textContent = `(${done}/${s.topics.length} done)`;
-    topicList.innerHTML = s.topics.map(t => `
-      <div class="topic-item">
+    topicList.innerHTML = s.topics.map((t, idx) => `
+      <div class="topic-item" draggable="true" data-topic-id="${t.id}"
+        ondragstart="topicDragStart(event,'${t.id}')"
+        ondragover="topicDragOver(event)"
+        ondrop="topicDrop(event,'${t.id}')"
+        ondragend="topicDragEnd(event)">
+        <div style="cursor:grab;color:var(--ink5);padding:0 6px 0 0;font-size:1rem;line-height:1;user-select:none" title="Drag to reorder">⠿</div>
         <div style="flex:1">
-          <div class="topic-name">${esc(t.name)}</div>
+          <div class="topic-name" id="tname-display-${t.id}">${esc(t.name)}</div>
+          <input id="tname-input-${t.id}" type="text" value="${esc(t.name)}"
+            style="display:none;padding:4px 8px;font-size:0.9rem;border-radius:6px;border:1.5px solid #2d6a4f"
+            onkeydown="topicRenameKey(event,'${t.id}')"
+            onblur="cancelTopicRename('${t.id}')">
           ${t.note ? `<div class="topic-note">${esc(t.note)}</div>` : ''}
         </div>
         <select class="status-sel" onchange="changeTopicStatus('${t.id}',this.value)">
@@ -1331,7 +1358,8 @@ function renderSubjectDetail() {
           <option value="done"  ${t.status==='done' ?'selected':''}>Done</option>
           <option value="stuck" ${t.status==='stuck'?'selected':''}>Stuck</option>
         </select>
-        <button class="btn btn-red btn-sm" style="margin-left:6px" onclick="deleteTopic('${t.id}')">×</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="startTopicRename('${t.id}')" title="Rename">✏</button>
+        <button class="btn btn-red btn-sm" style="margin-left:4px" onclick="deleteTopic('${t.id}')">×</button>
       </div>`).join('');
   }
 
@@ -1573,10 +1601,12 @@ function renderSessionLog(s, data) {
     }
 
     const typeBadge = sessionTypeBadge(h.sessionType);
+    const durationBadge = h.duration ? `<span style="font-size:0.72rem;color:var(--ink5);background:var(--bg3);padding:2px 8px;border-radius:20px;">⏱ ${formatDuration(h.duration)}</span>` : '';
     return `<div class="${entryClass}" data-session-type="${h.sessionType || 'none'}">
       <div class="session-entry-header">
         <span class="session-date">${fmtDate(h.at)}</span>
         ${typeBadge}
+        ${durationBadge}
         ${remindBadge}
       </div>
 
@@ -1653,6 +1683,161 @@ function deleteTopic(topicId) {
   saveData(data); renderSubjectDetail(); toast('Topic deleted');
 }
 
+// ══ TOPIC RENAME ══
+function startTopicRename(topicId) {
+  const display = document.getElementById('tname-display-' + topicId);
+  const input   = document.getElementById('tname-input-' + topicId);
+  if (!display || !input) return;
+  display.style.display = 'none';
+  input.style.display   = 'block';
+  input.focus();
+  input.select();
+}
+
+function cancelTopicRename(topicId) {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  const t = s ? s.topics.find(t => t.id === topicId) : null;
+  const display = document.getElementById('tname-display-' + topicId);
+  const input   = document.getElementById('tname-input-' + topicId);
+  if (!display || !input) return;
+  if (t) input.value = t.name; // reset
+  display.style.display = 'block';
+  input.style.display   = 'none';
+}
+
+function saveTopicRename(topicId) {
+  const input = document.getElementById('tname-input-' + topicId);
+  if (!input) return;
+  const newName = input.value.trim();
+  if (!newName) { cancelTopicRename(topicId); return; }
+
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  const t = s.topics.find(t => t.id === topicId);
+  if (!t) return;
+
+  const oldName = t.name;
+  t.name = newName;
+
+  // Update sessionType in history where it matched the old name
+  data.history.forEach(h => {
+    if (h.subjectId === s.id && h.sessionType === oldName) {
+      h.sessionType = newName;
+    }
+  });
+
+  // Update colour cache key
+  if (_topicColorCache[oldName]) {
+    _topicColorCache[newName] = _topicColorCache[oldName];
+  }
+
+  saveData(data);
+  renderSubjectDetail();
+  renderSubjects();
+  toast(`Renamed to "${newName}"`);
+}
+
+function topicRenameKey(event, topicId) {
+  if (event.key === 'Enter') { event.preventDefault(); saveTopicRename(topicId); }
+  if (event.key === 'Escape') { cancelTopicRename(topicId); }
+}
+
+// ══ TOPIC DRAG TO REORDER ══
+let _dragTopicId = null;
+
+function topicDragStart(event, topicId) {
+  _dragTopicId = topicId;
+  event.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const el = document.querySelector(`[data-topic-id="${topicId}"]`);
+    if (el) el.classList.add('dragging');
+  }, 0);
+}
+
+function topicDragOver(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  // Highlight drop target
+  document.querySelectorAll('.topic-item').forEach(el => el.classList.remove('drag-over'));
+  const target = event.currentTarget;
+  if (target && target.dataset.topicId !== _dragTopicId) {
+    target.classList.add('drag-over');
+  }
+}
+
+function topicDrop(event, targetTopicId) {
+  event.preventDefault();
+  document.querySelectorAll('.topic-item').forEach(el => {
+    el.classList.remove('drag-over');
+    el.classList.remove('dragging');
+  });
+  if (!_dragTopicId || _dragTopicId === targetTopicId) return;
+
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+
+  const fromIdx = s.topics.findIndex(t => t.id === _dragTopicId);
+  const toIdx   = s.topics.findIndex(t => t.id === targetTopicId);
+  if (fromIdx === -1 || toIdx === -1) return;
+
+  // Splice and reinsert
+  const [moved] = s.topics.splice(fromIdx, 1);
+  s.topics.splice(toIdx, 0, moved);
+
+  saveData(data);
+  renderSubjectDetail();
+  _dragTopicId = null;
+}
+
+function topicDragEnd(event) {
+  document.querySelectorAll('.topic-item').forEach(el => {
+    el.classList.remove('drag-over');
+    el.classList.remove('dragging');
+  });
+  _dragTopicId = null;
+}
+
+// ══ SESSION TIMER ══
+let _timerStart  = null;
+let _timerTick   = null;
+
+function startSessionTimer() {
+  stopSessionTimer(); // clear any existing
+  _timerStart = Date.now();
+  const display = document.getElementById('session-timer-display');
+  const text    = document.getElementById('session-timer-text');
+  if (display) display.style.display = 'flex';
+  _timerTick = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - _timerStart) / 1000);
+    if (text) text.textContent = formatDuration(elapsed);
+  }, 1000);
+}
+
+function stopSessionTimer() {
+  clearInterval(_timerTick);
+  _timerTick  = null;
+  const display = document.getElementById('session-timer-display');
+  if (display) display.style.display = 'none';
+}
+
+function getSessionDuration() {
+  if (!_timerStart) return null;
+  return Math.floor((Date.now() - _timerStart) / 1000); // seconds
+}
+
+function formatDuration(seconds) {
+  if (!seconds || seconds < 0) return '0m';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 // ══ SESSION LOG MODAL ══
 function toggleReminderDate() {
   const on = document.getElementById('s-remind-on').checked;
@@ -1690,6 +1875,9 @@ function openCheckin() {
   // Build topic chips and clear selection
   buildTopicChips(s.topics, null);
 
+  // Start session timer
+  startSessionTimer();
+
   openModal('modal-session');
 }
 
@@ -1720,6 +1908,13 @@ function openEditSession(sessionId) {
   const editSubject = data.subjects.find(sub => sub.id === h.subjectId);
   const editTopics = editSubject ? editSubject.topics : [];
   buildTopicChips(editTopics, h.topicId || null);
+
+  // Don't run timer for edits — show existing duration if present
+  stopSessionTimer();
+  if (h.duration) {
+    document.getElementById('session-timer-display').style.display = 'flex';
+    document.getElementById('session-timer-text').textContent = formatDuration(h.duration);
+  }
 
   openModal('modal-session');
 }
@@ -1773,6 +1968,7 @@ function saveSession() {
       if (t) { t.status = status; if (notes) t.note = notes; }
     }
     const newTopic = topicId ? s.topics.find(t => t.id === topicId) : null;
+    const sessionDuration = getSessionDuration();
     data.history.unshift({
       id: uid(),
       subjectId: currentSubjectId,
@@ -1780,12 +1976,14 @@ function saveSession() {
       topicId: topicId || null,
       stopped, next, notes,
       sessionType: newTopic ? newTopic.name : null,
+      duration: sessionDuration,
       remindOn: remindOn || null,
       remindDone: false,
       at: ts()
     });
     if (data.history.length > 300) data.history.length = 300;
     saveData(data);
+    stopSessionTimer();
     closeModal('modal-session');
     renderSubjectDetail();
     updateReminderBadge();
