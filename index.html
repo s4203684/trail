@@ -193,6 +193,16 @@
 
     /* ── Topics ── */
     .topic-item { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin-bottom:7px; display:flex; align-items:center; gap:10px; }
+
+    /* Pinned note — adapts to dark mode */
+    .pinned-note-card { background:#fefce8; border:1px solid #fde68a; border-radius:12px; padding:16px 20px; }
+    .pinned-note-label { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:#92400e; margin-bottom:6px; font-weight:600; }
+    .pinned-note-text  { font-size:0.9rem; color:#78350f; line-height:1.55; white-space:pre-wrap; }
+    .pinned-note-btn   { background:#fde68a; color:#92400e; border:none; flex-shrink:0; }
+    body.dark .pinned-note-card { background:#2a2310; border-color:#5a4a10; }
+    body.dark .pinned-note-label { color:#d4a847; }
+    body.dark .pinned-note-text  { color:#c8a040; }
+    body.dark .pinned-note-btn   { background:#3a3010; color:#d4a847; border:1px solid #5a4a10; }
     .topic-item.drag-over { border-color:#2d6a4f; background:var(--bg3); }
     .topic-item.dragging  { opacity:0.4; }
     .topic-name { flex:1; font-size:0.9rem; font-weight:500; }
@@ -424,6 +434,7 @@
       <button class="back-btn" onclick="showPage('subjects')">← Back</button>
       <div class="page-header">
         <div style="display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap">
+          <div id="detail-color-dot" style="width:12px;height:12px;border-radius:50%;flex-shrink:0;cursor:pointer" onclick="openColorPickerForCurrent()" title="Change colour"></div>
           <div class="page-title" id="detail-title"></div>
           <button id="detail-status-btn" class="subject-status" onclick="cycleSubjectStatus()"></button>
         </div>
@@ -443,16 +454,19 @@
           <strong>Next up</strong>
           <span id="ws-next-text"></span>
         </div>
+        <div id="ws-prev-stops" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid #2a2a2a">
+          <div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:#555;margin-bottom:4px">Previous stops</div>
+        </div>
       </div>
 
       <!-- Pinned Note -->
-      <div id="pinned-note-card" style="background:#fefce8;border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:none">
+      <div id="pinned-note-card" class="pinned-note-card" style="display:none;margin-bottom:16px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
           <div style="flex:1">
-            <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:#92400e;margin-bottom:6px;font-weight:600">📌 Pinned Note</div>
-            <div id="pinned-note-text" style="font-size:0.9rem;color:#78350f;line-height:1.55;white-space:pre-wrap"></div>
+            <div class="pinned-note-label">📌 Pinned Note</div>
+            <div id="pinned-note-text" class="pinned-note-text"></div>
           </div>
-          <button class="btn btn-sm" onclick="openPinnedNoteEdit()" style="background:#fde68a;color:#92400e;border:none;flex-shrink:0" title="Edit note">✏</button>
+          <button class="btn btn-sm pinned-note-btn" onclick="openPinnedNoteEdit()" title="Edit note">✏</button>
         </div>
       </div>
       <div id="pinned-note-empty" style="margin-bottom:16px">
@@ -820,6 +834,7 @@ function normalizeData(raw) {
       stopped: s && s.stopped ? s.stopped : '',
       pinnedNote: s && s.pinnedNote ? s.pinnedNote : null,
       customColor: s && s.customColor ? s.customColor : null,
+      priority: !!(s && s.priority),
       nextTodo: s && s.nextTodo ? s.nextTodo : '',
       createdAt: s && s.createdAt ? s.createdAt : ts(),
       deadlineTitle: s && s.deadlineTitle ? s.deadlineTitle : '',
@@ -903,6 +918,9 @@ function sortSubjects(subjects, history) {
     if (!current || new Date(h.at) > new Date(current.at)) latestBySubject[h.subjectId] = h;
   });
   return [...subjects].sort((a, b) => {
+    // Priority subjects always first
+    if (a.priority && !b.priority) return -1;
+    if (!a.priority && b.priority) return 1;
     const aDeadline = daysUntil(a.deadlineDate);
     const bDeadline = daysUntil(b.deadlineDate);
     if (aDeadline !== null || bDeadline !== null) {
@@ -1254,6 +1272,7 @@ function renderSubjects() {
         <div class="subject-dot" style="background:${color};cursor:pointer;border:2px solid transparent;box-sizing:content-box" onclick="openColorPicker('${s.id}')" title="Change colour"></div>
         <div class="subject-name" onclick="openSubject('${s.id}')">${esc(s.name)}</div>
         <button class="subject-status ${sm.cls}" onclick="cycleStatusFromList('${s.id}')" title="Click to change">${sm.label}</button>
+        ${s.priority ? `<span class="smart-pill smart-warn" style="cursor:pointer" onclick="togglePriority('${s.id}')" title="Click to remove priority">⚡ Priority</span>` : ''}
         ${daysBadge} ${dueBadge} ${deadlineBadge(s)}
       </div>
       ${smartPills.length ? `<div class="insight-meta" style="margin:0 0 8px 0">${smartPills.join('')}</div>` : ''}
@@ -1345,6 +1364,8 @@ function renderSubjectDetail() {
   document.getElementById('detail-title').textContent = s.name;
   const stBtn = document.getElementById('detail-status-btn');
   stBtn.textContent = sm.label; stBtn.className = `subject-status ${sm.cls}`;
+  const colorDot = document.getElementById('detail-color-dot');
+  if (colorDot) colorDot.style.background = s.customColor || COLORS[s.colorIdx % COLORS.length];
 
   const wsEl = document.getElementById('ws-stopped');
   wsEl.textContent = s.stopped || 'Nothing recorded yet — click Log Session';
@@ -1366,6 +1387,26 @@ function renderSubjectDetail() {
   const wsNext = document.getElementById('ws-next');
   if (s.nextTodo) { wsNext.style.display='block'; document.getElementById('ws-next-text').textContent = s.nextTodo; }
   else            { wsNext.style.display='none'; }
+
+  // Show previous stopping points from session history
+  const prevStops = data.history
+    .filter(h => h.subjectId === s.id && h.stopped && h.stopped !== s.stopped)
+    .sort((a,b) => new Date(b.at) - new Date(a.at))
+    .slice(0, 3);
+  const prevEl = document.getElementById('ws-prev-stops');
+  if (prevEl) {
+    if (prevStops.length > 0) {
+      prevEl.style.display = 'block';
+      prevEl.innerHTML = '<div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:#555;margin-bottom:4px">Previous stops</div>' +
+        prevStops.map(h =>
+          `<div style="font-size:0.78rem;color:#666;padding:4px 0;border-top:1px solid #2a2a2a">
+            <span style="font-size:0.65rem;color:#555;margin-right:8px">${relativeTime(h.at)}</span>${esc(h.stopped)}
+          </div>`
+        ).join('');
+    } else {
+      prevEl.style.display = 'none';
+    }
+  }
 
   document.getElementById('detail-deadline-title').value = s.deadlineTitle || '';
   document.getElementById('detail-deadline-date').value = s.deadlineDate || '';
@@ -1395,28 +1436,42 @@ function renderSubjectDetail() {
     const done = s.topics.filter(t => t.status==='done').length;
     countEl.textContent = `(${done}/${s.topics.length} done)`;
     topicList.innerHTML = s.topics.map((t, idx) => `
-      <div class="topic-item" draggable="true" data-topic-id="${t.id}"
+      <div class="topic-item" style="flex-direction:column;align-items:stretch;gap:0" draggable="true" data-topic-id="${t.id}"
         ondragstart="topicDragStart(event,'${t.id}')"
         ondragover="topicDragOver(event)"
         ondrop="topicDrop(event,'${t.id}')"
         ondragend="topicDragEnd(event)">
-        <div style="cursor:grab;color:var(--ink5);padding:0 6px 0 0;font-size:1rem;line-height:1;user-select:none" title="Drag to reorder">⠿</div>
-        <div style="flex:1">
-          <div class="topic-name" id="tname-display-${t.id}">${esc(t.name)}</div>
-          <input id="tname-input-${t.id}" type="text" value="${esc(t.name)}"
-            style="display:none;padding:4px 8px;font-size:0.9rem;border-radius:6px;border:1.5px solid #2d6a4f"
-            onkeydown="topicRenameKey(event,'${t.id}')"
-            onblur="cancelTopicRename('${t.id}')">
-          ${t.note ? `<div class="topic-note">${esc(t.note)}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="cursor:grab;color:var(--ink5);padding:0 2px;font-size:1rem;line-height:1;user-select:none" title="Drag to reorder">⠿</div>
+          <div style="flex:1;min-width:0">
+            <div class="topic-name" id="tname-display-${t.id}">${esc(t.name)}</div>
+            <input id="tname-input-${t.id}" type="text" value="${esc(t.name)}"
+              style="display:none;padding:4px 8px;font-size:0.9rem;border-radius:6px;border:1.5px solid #2d6a4f"
+              onkeydown="topicRenameKey(event,'${t.id}')"
+              onblur="cancelTopicRename('${t.id}')">
+          </div>
+          <select class="status-sel" onchange="changeTopicStatus('${t.id}',this.value)">
+            <option value="todo"  ${t.status==='todo' ?'selected':''}>To Do</option>
+            <option value="doing" ${t.status==='doing'?'selected':''}>In Progress</option>
+            <option value="done"  ${t.status==='done' ?'selected':''}>Done</option>
+            <option value="stuck" ${t.status==='stuck'?'selected':''}>Stuck</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="startTopicRename('${t.id}')" title="Rename">✏</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleTopicNotes('${t.id}')" title="Notes">📝</button>
+          <button class="btn btn-red btn-sm" onclick="deleteTopic('${t.id}')">×</button>
         </div>
-        <select class="status-sel" onchange="changeTopicStatus('${t.id}',this.value)">
-          <option value="todo"  ${t.status==='todo' ?'selected':''}>To Do</option>
-          <option value="doing" ${t.status==='doing'?'selected':''}>In Progress</option>
-          <option value="done"  ${t.status==='done' ?'selected':''}>Done</option>
-          <option value="stuck" ${t.status==='stuck'?'selected':''}>Stuck</option>
-        </select>
-        <button class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="startTopicRename('${t.id}')" title="Rename">✏</button>
-        <button class="btn btn-red btn-sm" style="margin-left:4px" onclick="deleteTopic('${t.id}')">×</button>
+        <div id="topic-notes-area-${t.id}" style="display:${t.note ? 'block' : 'none'};margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <textarea
+            id="topic-notes-input-${t.id}"
+            placeholder="Notes for this topic — what you learned, reminders, links…"
+            style="min-height:60px;font-size:0.85rem;border-radius:6px"
+            onblur="saveTopicNote('${t.id}')"
+          >${esc(t.note || '')}</textarea>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="btn btn-green btn-sm" onclick="saveTopicNote('${t.id}')">Save note</button>
+            <button class="btn btn-gray btn-sm" onclick="toggleTopicNotes('${t.id}')">Done</button>
+          </div>
+        </div>
       </div>`).join('');
   }
 
@@ -1578,27 +1633,50 @@ function renderHistory() {
   filter.innerHTML = '<option value="">All subjects</option>' +
     data.subjects.map(s => `<option value="${s.id}" ${s.id===selected?'selected':''}>${esc(s.name)}</option>`).join('');
 
-  let entries = selected ? data.history.filter(h => h.subjectId === selected) : data.history;
-  const list  = document.getElementById('history-list');
+  let entries = (selected ? data.history.filter(h => h.subjectId === selected) : data.history)
+    .sort((a,b) => new Date(b.at) - new Date(a.at));
+
+  const list = document.getElementById('history-list');
 
   if (entries.length === 0) {
     list.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">No history yet.<br>Once you log sessions, your progress story will show up here.</div></div>`;
     return;
   }
 
-  list.innerHTML = entries.map(h => {
-    const parts = [];
-    if (h.stopped) parts.push(`<div>📍 <strong>Stopped:</strong> ${esc(h.stopped)}</div>`);
-    if (h.next)    parts.push(`<div style="color:#2d6a4f">→ <strong>Next:</strong> ${esc(h.next)}</div>`);
-    if (h.notes)   parts.push(`<div style="color:var(--ink4)">📝 ${esc(h.notes)}</div>`);
-    if (h.remindOn && !h.remindDone) parts.push(`<div style="color:#b5651d">🔔 Revise: ${fmtDateOnly(h.remindOn)}</div>`);
-    return `<div class="log-entry">
-      <div class="log-date" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span>${fmtDate(h.at)}</span>
-        <strong style="color:var(--ink2)">${esc(h.subjectName)}</strong>
-        ${sessionTypeBadge(h.sessionType)}
-      </div>
-      <div style="display:flex;flex-direction:column;gap:4px;margin-top:5px;line-height:1.5">${parts.join('')}</div>
+  // Group by date
+  const groups = {};
+  entries.forEach(h => {
+    const d = new Date(h.at);
+    const key = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(h);
+  });
+
+  list.innerHTML = Object.entries(groups).map(([dateKey, dayEntries]) => {
+    const dayLabel = new Date(dateKey).toLocaleDateString('en-AU', {
+      weekday:'long', day:'numeric', month:'long', year:'numeric'
+    });
+    const entriesHtml = dayEntries.map(h => {
+      const parts = [];
+      if (h.stopped) parts.push(`<div>📍 <strong>Stopped:</strong> ${esc(h.stopped)}</div>`);
+      if (h.next)    parts.push(`<div style="color:#2d6a4f">→ <strong>Next:</strong> ${esc(h.next)}</div>`);
+      if (h.notes)   parts.push(`<div style="color:var(--ink4)">📝 ${esc(h.notes)}</div>`);
+      if (h.remindOn && !h.remindDone) parts.push(`<div style="color:#b5651d">🔔 Revise: ${fmtDateOnly(h.remindOn)}</div>`);
+      const time = new Date(h.at).toLocaleTimeString('en-AU', {hour:'2-digit', minute:'2-digit'});
+      return `<div class="log-entry">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+          <span style="font-size:0.72rem;color:var(--ink5)">${time}</span>
+          <strong style="font-size:0.875rem;color:var(--ink2)">${esc(h.subjectName)}</strong>
+          ${sessionTypeBadge(h.sessionType)}
+          ${h.duration ? `<span style="font-size:0.72rem;color:var(--ink5);background:var(--bg3);padding:2px 8px;border-radius:20px">⏱ ${formatDuration(h.duration)}</span>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;line-height:1.5;font-size:0.875rem">${parts.join('')}</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:24px">
+      <div style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink5);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:4px">${dayLabel} · ${dayEntries.length} session${dayEntries.length===1?'':'s'}</div>
+      ${entriesHtml}
     </div>`;
   }).join('');
 }
@@ -1618,6 +1696,59 @@ function buildSidebar() {
 
 // ══ SETTINGS ══
 function saveName() { const n = document.getElementById('settings-name').value.trim(); saveName2(n); buildSidebar(); toast('Name saved'); }
+
+// ══ TOPIC NOTES ══
+function toggleTopicNotes(topicId) {
+  const area = document.getElementById('topic-notes-area-' + topicId);
+  if (!area) return;
+  const isVisible = area.style.display !== 'none';
+  area.style.display = isVisible ? 'none' : 'block';
+  if (!isVisible) {
+    const ta = document.getElementById('topic-notes-input-' + topicId);
+    if (ta) ta.focus();
+  }
+}
+
+function saveTopicNote(topicId) {
+  const ta = document.getElementById('topic-notes-input-' + topicId);
+  if (!ta) return;
+  const note = ta.value.trim();
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  const t = s.topics.find(t => t.id === topicId);
+  if (!t) return;
+  t.note = note;
+  saveData(data);
+  // Don't re-render — just update the note display silently
+  toast('Note saved ✓');
+}
+
+// ══ PRIORITY TOGGLE ══
+function togglePriority(subjectId) {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === subjectId);
+  if (!s) return;
+  s.priority = !s.priority;
+  saveData(data);
+  renderSubjects();
+  buildSidebar();
+  toast(s.priority ? '⚡ Marked as priority' : 'Priority removed');
+}
+
+// ══ RELATIVE TIME (for prev stops) ══
+function relativeTime(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(mins / 60);
+  const days = Math.floor(hours / 24);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  if (hours < 24) return hours + 'h ago';
+  if (days < 7) return days + 'd ago';
+  return fmtDateOnly(iso);
+}
 
 // ══ PINNED NOTE ══
 function openPinnedNoteEdit() {
@@ -1660,6 +1791,10 @@ const SUBJECT_COLORS = [
 
 let _colorPickerSubjectId = null;
 
+function openColorPickerForCurrent() {
+  if (currentSubjectId) openColorPicker(currentSubjectId);
+}
+
 function openColorPicker(subjectId) {
   _colorPickerSubjectId = subjectId;
   const data = getData();
@@ -1691,6 +1826,9 @@ function pickColor(colorIdx, hex) {
   closeModal('modal-color-picker');
   renderSubjects();
   buildSidebar();
+  // Update detail page dot if we're on it
+  const dot = document.getElementById('detail-color-dot');
+  if (dot) dot.style.background = hex;
   toast('Colour updated');
 }
 
@@ -1799,9 +1937,14 @@ function renderSessionLog(s, data) {
   buildSessionFilterBar(entries, s.topics);
   if (countEl) countEl.textContent = `(${entries.length})`;
 
+  // Pagination — show last 5 by default, expandable
+  const INITIAL_SHOW = 5;
+  let _showAll = el.dataset.showAll === 'true';
+  const displayEntries = _showAll || entries.length <= INITIAL_SHOW ? entries : entries.slice(0, INITIAL_SHOW);
+
   const today = todayISO();
 
-  el.innerHTML = entries.map(h => {
+  el.innerHTML = displayEntries.map(h => {
     const isOverdue = h.remindOn && h.remindOn <= today && !h.remindDone;
     const isDueToday = h.remindOn && h.remindOn === today && !h.remindDone;
     const entryClass = isOverdue ? 'session-entry reminder-due' : (h.remindOn && !h.remindDone ? 'session-entry has-reminder' : 'session-entry');
@@ -1850,7 +1993,20 @@ function renderSessionLog(s, data) {
         </div>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + (entries.length > INITIAL_SHOW ? `
+    <div style="text-align:center;padding:12px 0">
+      <button class="btn btn-ghost btn-sm" onclick="toggleSessionLogExpand(this)">
+        ${_showAll ? `▲ Show less` : `▼ Show all ${entries.length} sessions`}
+      </button>
+    </div>` : '');
+}
+
+function toggleSessionLogExpand(btn) {
+  const el = document.getElementById('session-log');
+  el.dataset.showAll = el.dataset.showAll === 'true' ? 'false' : 'true';
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (s) renderSessionLog(s, data);
 }
 
 function deleteCurrentSubject() {
