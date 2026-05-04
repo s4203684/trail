@@ -50,7 +50,7 @@
         </header>
         <div id="carrer-skills">
             <h2>Skils to learn</h2>
-            <ul id="sill-list">
+            <ul id="skill-list">
                 <li>netwoking</li>
                 <li>linux system</li>
                 <li>active directory</li>
@@ -62,20 +62,23 @@
         </div>
         <div id="carrer-certs">
             <h2>Certificates</h2>
-            <ul id="carrer-certs">
+            <ul id="carrer-certificates">
                 <li>googlle cyber certificate</li>
                 <li>grc certificate</li>
                 <li>com ta plus</li>
             </ul>
             <label for="certificate">Add Certificte</label><br>
             <input type="text" name="" id="certificate"  placeholder="e.g GRC Certificate...">
-            <button type="button" onclick="addCeetificate()">Add Certificate</button>
+            <button type="button" onclick="addCertificate()">Add Certificate</button>
         </div>
         <div id="carrer-resources">
             <p>Resources to be used</p>
+            <ul id="reso">
+                <li>www.youtube.com</li>
+            </ul>
             <label for="resource">Add Resource</label><br>
             <input type="url" name="" id="resource"  placeholder="e.g Youtube link- www.youtube.com">
-            <button type="button">Add Resource</button>
+            <button type="button" onclick="addResources()">Add Resource</button>
 
         </div>
         <script>
@@ -92,20 +95,37 @@
 
                 newItem.textContent = text;
                 list.appendChild(newItem);
+                document.getElementById("skill").value = ""
             }
 
-            function addCeetificate(){
+            function addCertificate(){
                 let text = document.getElementById("certificate").value.trim();
                 if(text === ""){
                     alert("Enter a Certificate");
                     return;
                 }
 
-                let list = document.getElementById("carrer-certs");
+                let list = document.getElementById("carrer-certificates");
                 let newItem = document.createElement("li");
 
                 newItem.textContent = text;
                 list.appendChild(newItem);
+                document.getElementById("certificate").value = ""
+            }
+
+            function addResources(){
+                let text = document.getElementById("resource").value.trim();
+                if(text === ""){
+                    alert("Enter a Resource link/URL");
+                    return;
+                }
+
+                let list = document.getElementById("reso");
+                let newItem = document.createElement("li");
+
+                newItem.textContent = text;
+                list.appendChild(newItem);
+                document.getElementById("resource").value = ""
             }
         </script>
     </body>
