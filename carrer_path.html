@@ -89,13 +89,16 @@
                     return;
                 }
 
-                let list =document.getElementById("skill-list");
+                let skills =JSON.parse(localStorage.getItem("skills")) || [];
+                skills.push(text);
 
-                let newItem = document.createElement("li");
+                localStorage.setItem("skills", JSON.stringify(skills));
 
-                newItem.textContent = text;
-                list.appendChild(newItem);
-                document.getElementById("skill").value = ""
+                let item = document.createElement("li");
+                item.textContent = text;
+                let list = document.getElementById("skill-list");
+                list.appendChild(item);
+                document.getElementById("skill").value = "";
             }
 
             function addCertificate(){
@@ -105,12 +108,16 @@
                     return;
                 }
 
-                let list = document.getElementById("carrer-certificates");
-                let newItem = document.createElement("li");
+                let certificates =JSON.parse(localStorage.getItem("certificates")) || [];
+                certificates.push(text);
 
-                newItem.textContent = text;
-                list.appendChild(newItem);
-                document.getElementById("certificate").value = ""
+                localStorage.setItem("certificates", JSON.stringify(certificates));
+
+                let item = document.createElement("li");
+                item.textContent = text;
+                let list = document.getElementById("carrer-certificates");
+                list.appendChild(item);
+                document.getElementById("certificate").value = "";
             }
 
             function addResources(){
@@ -120,12 +127,43 @@
                     return;
                 }
 
-                let list = document.getElementById("reso");
-                let newItem = document.createElement("li");
+                let resource =JSON.parse(localStorage.getItem("resource")) || [];
+                resource.push(text);
 
-                newItem.textContent = text;
-                list.appendChild(newItem);
-                document.getElementById("resource").value = ""
+                localStorage.setItem("resource", JSON.stringify(resource));
+
+                let item = document.createElement("li");
+                item.textContent = text;
+                let list = document.getElementById("reso");
+                list.appendChild(item)
+                document.getElementById("resource").value = "";
+            }
+
+            window.onload = function(){
+                let skills = JSON.parse(localStorage.getItem("skills")) || [];
+                skills.forEach(skill => {
+                    let list = document.getElementById("skill-list")
+                    let item = document.createElement("li")
+                    item.textContent = skill;
+                    list.appendChild(item)
+                })
+
+                let certificates = JSON.parse(localStorage.getItem("certificates")) || [];
+                certificates.forEach(certificate =>{
+                    let list = document.getElementById("carrer-certificates");
+                    let item = document.createElement("li");
+                    item.textContent = certificate;
+                    list.appendChild(item);
+                })
+
+                let resource = JSON.parse(localStorage.getItem("resource")) ||  [];
+                resource.forEach(reso => {
+                    let list = document.getElementById("reso");
+                    let item = document.createElement("li");
+                    item.textContent = reso;
+                    list.appendChild(item);
+                })
+
             }
         </script>
     </body>
