@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyTrail</title>
   <link rel="stylesheet" href="css/tasks.css">
+  <link rel="stylesheet" href="css/report.css">
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -411,6 +412,7 @@
     <div class="sidebar-section">More</div>
     <button class="sidebar-btn" onclick="showPage('reminders')">🔔 Reminders<span id="sb-remind-count" class="sidebar-remind" style="display:none"></span></button>
     <button class="sidebar-btn" onclick="showPage('history')">📋 History</button>
+    <button class="sidebar-btn" onclick="showPage('report')">📊 Report</button>
     <button class="sidebar-btn" onclick="showPage('settings')">⚙ Settings</button>
   </nav>
 
@@ -572,6 +574,20 @@
       <div id="history-list"></div>
     </div>
 
+    <!-- REPORT -->
+    <div class="page" id="page-report">
+      <div class="page-header">
+        <div class="page-title">📊 Report</div>
+      </div>
+      <div class="report-period">
+        <button class="chip active" data-period="day"   onclick="setReportPeriod('day')">Today</button>
+        <button class="chip"        data-period="week"  onclick="setReportPeriod('week')">Last 7 days</button>
+        <button class="chip"        data-period="month" onclick="setReportPeriod('month')">Last 30 days</button>
+        <button class="chip"        data-period="all"   onclick="setReportPeriod('all')">All time</button>
+      </div>
+      <div id="report-content"></div>
+    </div>
+
     <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <div class="page-title" style="margin-bottom:24px">Settings</div>
@@ -730,6 +746,12 @@
   <div class="modal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
       <h2 id="session-modal-title" style="margin:0">Log Session</h2>
+      <div id="session-time-input" style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.85rem;font-weight:500;color:var(--ink3)">⏱ Time studied:
+        <input type="number" id="s-hours"   min="0" max="24" value="0" style="width:60px;text-align:center;padding:4px 6px;font-size:0.85rem">
+        <span>h</span>
+        <input type="number" id="s-minutes" min="0" max="59" value="0" style="width:60px;text-align:center;padding:4px 6px;font-size:0.85rem">
+        <span>m</span>
+      </div>
       <div id="session-timer-display" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.85rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink3)">⏱ <span id="session-timer-text">00:00</span></div>
     </div>
 
@@ -1152,6 +1174,7 @@ function showPage(name) {
   if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
   if (name === 'tasks')     { document.querySelector('[onclick="showPage(\'tasks\')"]').classList.add('active'); initTasksPage(); }
+  if (name === 'report')    { document.querySelector('[onclick="showPage(\'report\')"]').classList.add('active'); initReportPage(); }
   if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); renderBackupReminder(); }
   if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
 }
@@ -2289,8 +2312,9 @@ function openCheckin() {
   // Build topic chips and clear selection
   buildTopicChips(s.topics, null);
 
-  // Start session timer
-  startSessionTimer();
+  // Reset manual time inputs
+  document.getElementById('s-hours').value   = 0;
+  document.getElementById('s-minutes').value = 0;
 
   openModal('modal-session');
 }
@@ -2323,12 +2347,11 @@ function openEditSession(sessionId) {
   const editTopics = editSubject ? editSubject.topics : [];
   buildTopicChips(editTopics, h.topicId || null);
 
-  // Don't run timer for edits — show existing duration if present
+  // Don't run timer for edits — populate manual time inputs from existing duration
   stopSessionTimer();
-  if (h.duration) {
-    document.getElementById('session-timer-display').style.display = 'flex';
-    document.getElementById('session-timer-text').textContent = formatDuration(h.duration);
-  }
+  const dur = h.duration || 0;
+  document.getElementById('s-hours').value   = Math.floor(dur / 3600);
+  document.getElementById('s-minutes').value = Math.floor((dur % 3600) / 60);
 
   openModal('modal-session');
 }
@@ -2363,6 +2386,9 @@ function saveSession() {
     h.topicId     = topicId || null;
     h.remindOn    = remindOn || null;
     h.sessionType = editTopic ? editTopic.name : (topicId ? h.sessionType : null);
+    const editH = parseInt(document.getElementById('s-hours').value, 10)   || 0;
+    const editM = parseInt(document.getElementById('s-minutes').value, 10) || 0;
+    h.duration  = (editH * 3600) + (editM * 60);
     if (remindOn) h.remindDone = false;
     saveData(data);
     closeModal('modal-session');
@@ -2382,7 +2408,9 @@ function saveSession() {
       if (t) { t.status = status; if (notes) t.note = notes; }
     }
     const newTopic = topicId ? s.topics.find(t => t.id === topicId) : null;
-    const sessionDuration = getSessionDuration();
+    const inH = parseInt(document.getElementById('s-hours').value, 10)   || 0;
+    const inM = parseInt(document.getElementById('s-minutes').value, 10) || 0;
+    const sessionDuration = (inH * 3600) + (inM * 60);
     data.history.unshift({
       id: uid(),
       subjectId: currentSubjectId,
@@ -3255,5 +3283,6 @@ function saveData(d) {
 
 </script>
 <script src="js/tasks.js"></script>
+<script src="js/report.js"></script>
 </body>
 </html>
