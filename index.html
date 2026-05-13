@@ -529,6 +529,7 @@
       <div class="page-header">
         <div class="page-title">📝 Tasks & Calendar</div>
       </div>
+      <div class="stats-strip" id="stats-strip"></div>
       <div class="tabs">
         <button class="tab active" data-tab="todos"    onclick="switchTab('todos')">Todos</button>
         <button class="tab"        data-tab="calendar" onclick="switchTab('calendar')">Calendar</button>
@@ -539,6 +540,13 @@
                  onkeydown="if(event.key==='Enter')addTask()">
           <input type="date" id="new-date">
           <button class="btn btn-green" onclick="addTask()">+ Add</button>
+        </div>
+        <div class="filter-chips" id="filter-chips">
+          <button class="chip active" data-filter="all"     onclick="setFilter('all')">All</button>
+          <button class="chip"        data-filter="today"   onclick="setFilter('today')">Today</button>
+          <button class="chip"        data-filter="overdue" onclick="setFilter('overdue')">Overdue</button>
+          <button class="chip"        data-filter="week"    onclick="setFilter('week')">This week</button>
+          <button class="chip"        data-filter="done"    onclick="setFilter('done')">Done</button>
         </div>
         <ul class="todo-list" id="todo-list"></ul>
       </section>
