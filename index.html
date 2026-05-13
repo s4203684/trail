@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyTrail</title>
+  <link rel="stylesheet" href="css/tasks.css">
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -401,7 +402,7 @@
       </div>
     </div>
     <div class="sidebar-section">Carrer Path</div>
-    <a href="career_path.html"><button class="sidebar-btn">🛣️Path</button></a>
+    <a href="career_path.html"><button class="sidebar-section">🛣️Path</button></a>
     <div class="sidebar-section">Navigate</div>
     <button class="sidebar-btn" id="nav-home" onclick="showPage('subjects')">🏠 Home</button>
     <div class="sidebar-section">Subjects</div>
@@ -409,6 +410,7 @@
     <div class="sidebar-section">More</div>
     <button class="sidebar-btn" onclick="showPage('reminders')">🔔 Reminders<span id="sb-remind-count" class="sidebar-remind" style="display:none"></span></button>
     <button class="sidebar-btn" onclick="showPage('history')">📋 History</button>
+    <button class="sidebar-btn" onclick="showPage('tasks')">📝 Tasks</button>
     <button class="sidebar-btn" onclick="showPage('settings')">⚙ Settings</button>
   </nav>
 
@@ -520,6 +522,35 @@
         <div class="page-title">🔔 Revision Reminders</div>
       </div>
       <div id="reminders-list"></div>
+    </div>
+
+    <!-- TASKS (Todo + Calendar) -->
+    <div class="page" id="page-tasks">
+      <div class="page-header">
+        <div class="page-title">📝 Tasks & Calendar</div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="todos"    onclick="switchTab('todos')">Todos</button>
+        <button class="tab"        data-tab="calendar" onclick="switchTab('calendar')">Calendar</button>
+      </div>
+      <section class="view active" id="view-todos">
+        <div class="add-row">
+          <input type="text" id="new-label" placeholder="What needs doing?"
+                 onkeydown="if(event.key==='Enter')addTask()">
+          <input type="date" id="new-date">
+          <button class="btn btn-green" onclick="addTask()">+ Add</button>
+        </div>
+        <ul class="todo-list" id="todo-list"></ul>
+      </section>
+      <section class="view" id="view-calendar">
+        <div class="cal-nav">
+          <button class="btn btn-gray btn-sm" onclick="shiftMonth(-1)">‹</button>
+          <div class="cal-month" id="cal-month"></div>
+          <button class="btn btn-gray btn-sm" onclick="shiftMonth(1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div id="day-detail"></div>
+      </section>
     </div>
 
     <!-- HISTORY -->
@@ -1112,6 +1143,7 @@ function showPage(name) {
 
   if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
+  if (name === 'tasks')     { document.querySelector('[onclick="showPage(\'tasks\')"]').classList.add('active'); initTasksPage(); }
   if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); renderBackupReminder(); }
   if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
 }
@@ -3214,5 +3246,6 @@ function saveData(d) {
 })();
 
 </script>
+<script src="js/tasks.js"></script>
 </body>
 </html>
