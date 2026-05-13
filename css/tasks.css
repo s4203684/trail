@@ -1,7 +1,10 @@
 /* ════════════════════════════════════════════════════════════════
-   tasks.css — styles for the Tasks (Todo + Calendar) page only.
-   Everything here is NEW. Design tokens, .btn, .page-header,
-   .page-title, .empty, and input styling come from index.html.
+   tasks.css — Tasks (Todo + Calendar) page styles.
+
+   Your index.html has a global rule:
+       input, textarea, select { width: 100%; padding:9px 12px; ... }
+   That rule is too aggressive for our component, so several selectors
+   below override it with higher specificity (e.g. `.add-row input[..]`).
    ════════════════════════════════════════════════════════════════ */
 
 /* ── Tabs ── */
@@ -11,39 +14,60 @@
         border-bottom:2px solid transparent; font-family:inherit; }
 .tab.active { color:var(--ink); border-bottom-color:#2d6a4f; }
 
-/* ── Views (one visible at a time) ── */
+/* ── Views (only one visible) ── */
 .view { display:none; }
 .view.active { display:block; }
 
-/* ── Todo view ── */
-.add-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-.add-row input[type=text] { flex:1; min-width:200px; }
+/* ── Add row ── overrides the global 100%-width input rule ── */
+.add-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+.add-row input[type=text],
+.add-row input[type=date] { width:auto; }                       /* break the global rule */
+.add-row input[type=text]  { flex:1 1 240px; min-width:200px; }
+.add-row input[type=date]  { flex:0 0 auto; width:auto; }
+.add-row .btn              { flex:0 0 auto; }
 
-.todo-list { list-style:none; }
+/* ── Todo list ── */
+.todo-list { list-style:none; padding:0; }
 .todo-item { display:flex; align-items:center; gap:12px;
              background:var(--bg2); border:1px solid var(--border);
              padding:12px 14px; border-radius:8px; margin-bottom:8px; }
-.todo-item.done .todo-label { text-decoration: line-through; color: var(--ink4); }
-.todo-label { flex:1; font-size:0.95rem; }
-.todo-date  { font-size:0.78rem; color:var(--ink4); }
 
-/* ── Calendar view ── */
+/* Reset the checkbox so the global input rule stops stretching it */
+.todo-item input[type=checkbox] {
+  width:18px; height:18px; padding:0; border:1.5px solid var(--border2);
+  background:var(--input-bg); flex:0 0 18px; margin:0; cursor:pointer;
+}
+
+.todo-item.done .todo-label { text-decoration: line-through; color: var(--ink4); }
+.todo-label { flex:1; font-size:0.95rem; text-align:left; }
+.todo-date  { font-size:0.78rem; color:var(--ink4); white-space:nowrap; }
+
+/* ── Deadline-derived tasks (read-only, generated from subjects) ── */
+.todo-item.deadline { border-left:3px solid #c0392b; background:var(--bg3); }
+.deadline-badge {
+  font-size:0.7rem; padding:2px 9px; border-radius:20px;
+  background:#fce8e4; color:#c0392b; font-weight:600; white-space:nowrap;
+}
+
+/* ── Calendar ── */
 .cal-nav   { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
 .cal-month { font-weight:600; font-size:1.05rem; flex:1; text-align:center; }
 
 .cal-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:4px; }
 .cal-dow  { text-align:center; font-size:0.75rem; color:var(--ink4);
             padding:6px 0; font-weight:500; }
-.cal-day  { aspect-ratio: 1; background:var(--bg2); border:1px solid var(--border);
+.cal-day  { aspect-ratio:1; background:var(--bg2); border:1px solid var(--border);
             border-radius:6px; padding:6px; cursor:pointer;
-            display:flex; flex-direction:column;
+            display:flex; flex-direction:column; gap:2px;
             font-size:0.85rem; color:var(--ink2); }
 .cal-day.blank    { background:transparent; border:none; cursor:default; }
 .cal-day.today    { border-color:#2d6a4f; border-width:2px; }
 .cal-day.selected { background:var(--bg4); }
 .cal-day .count   { margin-top:auto; font-size:0.7rem; color:#2d6a4f; font-weight:600; }
 .cal-day .count.all-done { color:var(--ink4); text-decoration:line-through; }
+.cal-day .has-deadline { font-size:0.7rem; color:#c0392b; font-weight:600; }
 
+/* ── Selected-day detail ── */
 #day-detail    { margin-top:18px; }
 #day-detail h3 { font-size:0.95rem; margin-bottom:10px; color:var(--ink3); font-weight:600; }
-#day-detail ul { list-style:none; }
+#day-detail ul { list-style:none; padding:0; }
