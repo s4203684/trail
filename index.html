@@ -449,6 +449,7 @@
         <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
           <button class="btn btn-gray btn-sm" onclick="openAddTopic()">+ Topic</button>
           <button class="btn btn-ghost btn-sm" onclick="exportSubjectSummary()" title="Export summary">📄 Export</button>
+          <button id="detail-mark-done-btn" class="btn btn-gray btn-sm" onclick="setSubjectDoneFromDetail()" title="Mark this subject as done">✓ Mark Done</button>
           <button class="btn btn-green" onclick="openCheckin()">+ Log Session</button>
           <button class="btn btn-red btn-sm" onclick="deleteCurrentSubject()">Delete</button>
         </div>
@@ -1357,6 +1358,7 @@ function renderSubjects() {
           <button class="btn btn-ghost btn-sm" onclick="openSubject('${s.id}')">▶ Continue</button>
           <button class="btn btn-green btn-sm" onclick="quickLogForSubject('${s.id}')">➕ Log session</button>
           <button class="btn btn-amber btn-sm" onclick="reviewSubject('${s.id}')">🔁 Review</button>
+          ${(s.status || 'active') !== 'done' ? `<button class="btn btn-gray btn-sm" onclick="setSubjectDoneFromList('${s.id}')" title="Mark this subject as done">✓ Mark Done</button>` : ''}
         </div>
       </div>
     </div>`;
@@ -1399,6 +1401,27 @@ function cycleSubjectStatus() {
   saveData(data); renderSubjectDetail(); buildSidebar();
 }
 
+// Direct setter — marks a subject Done in one click, from the list card.
+function setSubjectDoneFromList(id) {
+  const data = getData();
+  const s = data.subjects.find(s => s.id === id);
+  if (!s) return;
+  s.status = 'done';
+  saveData(data); renderSubjects(); buildSidebar();
+  toast(`"${s.name}" marked as done ✓`);
+}
+
+// Direct setter — marks the currently open subject Done in one click, from the detail page.
+function setSubjectDoneFromDetail() {
+  if (!currentSubjectId) return;
+  const data = getData();
+  const s = data.subjects.find(s => s.id === currentSubjectId);
+  if (!s) return;
+  s.status = 'done';
+  saveData(data); renderSubjectDetail(); renderSubjects(); buildSidebar();
+  toast(`"${s.name}" marked as done ✓`);
+}
+
 // ══ SUBJECT DETAIL ══
 function openSubject(id) {
   currentSubjectId = id;
@@ -1435,6 +1458,8 @@ function renderSubjectDetail() {
   document.getElementById('detail-title').textContent = s.name;
   const stBtn = document.getElementById('detail-status-btn');
   stBtn.textContent = sm.label; stBtn.className = `subject-status ${sm.cls}`;
+  const markDoneBtn = document.getElementById('detail-mark-done-btn');
+  if (markDoneBtn) markDoneBtn.style.display = (s.status || 'active') === 'done' ? 'none' : '';
   const colorDot = document.getElementById('detail-color-dot');
   if (colorDot) colorDot.style.background = s.customColor || COLORS[s.colorIdx % COLORS.length];
 
