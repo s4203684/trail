@@ -982,6 +982,11 @@ function sortSubjects(subjects, history) {
     if (!current || new Date(h.at) > new Date(current.at)) latestBySubject[h.subjectId] = h;
   });
   return [...subjects].sort((a, b) => {
+    // Done subjects always last, regardless of priority/deadline/recency
+    const aDone = (a.status || 'active') === 'done';
+    const bDone = (b.status || 'active') === 'done';
+    if (aDone && !bDone) return 1;
+    if (!aDone && bDone) return -1;
     // Priority subjects always first
     if (a.priority && !b.priority) return -1;
     if (!a.priority && b.priority) return 1;
