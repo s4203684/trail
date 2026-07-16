@@ -974,7 +974,7 @@ function sortSubjects(subjects, history) {
   });
 }
 function getFocusSubject(data) {
-  const sorted = sortSubjects(data.subjects, data.history).filter(s => (s.status || 'active') !== 'done');
+  const sorted = sortSubjects(data.subjects, data.history).filter(s => (s.status || 'active') === 'active');
   if (sorted.length === 0) return null;
   const scored = sorted.map(s => {
     const last = data.history
@@ -991,7 +991,6 @@ function getFocusSubject(data) {
     }
     if (s.nextTodo) score += 35;
     if (inactiveDays !== null) score += Math.min(inactiveDays, 14) * 6;
-    if ((s.status || 'active') === 'onhold') score -= 20;
     return { subject: s, inactiveDays, deadlineDays, score };
   });
   scored.sort((a, b) => b.score - a.score);
@@ -1276,8 +1275,11 @@ function renderSubjects() {
     const deadlineDays = daysUntil(s.deadlineDate);
     const urgentClass = deadlineDays !== null && deadlineDays <= 7 ? ' urgent' : '';
 
+    const isOnHold = (s.status || 'active') === 'onhold';
+
     let daysBadge;
-    if      (days === null) daysBadge = `<span class="days-ago days-never">Never</span>`;
+    if      (isOnHold)      daysBadge = `<span class="days-ago" style="background:var(--bg4);color:var(--ink4)">⏸ Paused</span>`;
+    else if (days === null) daysBadge = `<span class="days-ago days-never">Never</span>`;
     else if (days === 0)    daysBadge = `<span class="days-ago days-fresh">Today</span>`;
     else if (days <= 2)     daysBadge = `<span class="days-ago days-fresh">${days}d ago</span>`;
     else if (days <= 5)     daysBadge = `<span class="days-ago days-warn">${days}d ago</span>`;
@@ -1304,9 +1306,9 @@ function renderSubjects() {
     const subjectDue = due.filter(h => h.subjectId === s.id).length;
     const dueBadge = subjectDue > 0 ? `<span class="remind-due">🔔 ${subjectDue} due</span>` : '';
     const smartPills = [];
-    if (days !== null && days >= 3) smartPills.push(`<span class="smart-pill smart-danger">⚠ Losing progress</span>`);
+    if (!isOnHold && days !== null && days >= 3) smartPills.push(`<span class="smart-pill smart-danger">⚠ Losing progress</span>`);
     if (s.nextTodo) smartPills.push(`<span class="smart-pill smart-good">👉 Continue from here</span>`);
-    if (deadlineDays !== null && deadlineDays <= 3) smartPills.push(`<span class="smart-pill smart-warn">🚨 Focus now</span>`);
+    if (!isOnHold && deadlineDays !== null && deadlineDays <= 3) smartPills.push(`<span class="smart-pill smart-warn">🚨 Focus now</span>`);
 
     return `<div class="subject-card${urgentClass}">
       <div class="subject-card-top">
