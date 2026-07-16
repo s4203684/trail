@@ -431,7 +431,6 @@
       <div id="session-intelligence"></div>
       <div id="weekly-summary"></div>
       <div id="revision-banner"></div>
-      <div id="backup-reminder"></div>
       <div id="subject-list"></div>
     </div>
 
@@ -1111,31 +1110,6 @@ function renderSessionIntelligence(data) {
   </div>`;
 }
 
-function renderBackupReminder() {
-  const el = document.getElementById('backup-reminder');
-  if (!el) return;
-  const lastExport = localStorage.getItem('st2_last_export');
-  const backupRaw = localStorage.getItem('st2_backup');
-  let backupAge = null;
-  if (backupRaw) {
-    try {
-      const parsed = JSON.parse(backupRaw);
-      if (parsed.backedUpAt) backupAge = Math.floor((Date.now() - new Date(parsed.backedUpAt).getTime()) / 86400000);
-    } catch(e) {}
-  }
-  const noExport = !lastExport;
-  const exportOld = lastExport ? ((Date.now() - new Date(lastExport).getTime()) / 86400000) >= 5 : false;
-  if (!noExport && !exportOld && !(backupAge !== null && backupAge >= 3)) {
-    el.innerHTML = '';
-    return;
-  }
-  el.innerHTML = `<div class="smart-banner">
-    <div class="smart-banner-title">💾 Download a backup</div>
-    <div class="smart-banner-text">You already know sync can fail sometimes. Keep a fresh backup file on your laptop or phone.</div>
-    <div class="insight-meta"><button class="btn btn-green btn-sm" onclick="exportData()">Download backup</button><button class="btn btn-ghost btn-sm" onclick="showPage('settings')">Open settings</button></div>
-  </div>`;
-}
-
 function updateSubjectPageFab() {
   document.body.classList.toggle('on-subject-page', !!(currentSubjectId && document.getElementById('page-subject') && document.getElementById('page-subject').classList.contains('active')));
 }
@@ -1149,7 +1123,7 @@ function showPage(name) {
   if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
   if (name === 'completed') { document.querySelector('[onclick="showPage(\'completed\')"]').classList.add('active'); renderCompletedSubjects(); }
-  if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); renderBackupReminder(); }
+  if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); }
   if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
 }
 
@@ -1176,7 +1150,7 @@ function toast(msg) {
 function renderSubjects() {
   const data = getData();
   const due  = getDueReminders();
-  const orderedSubjects = sortSubjects(data.subjects, data.history);
+  const orderedSubjects = sortSubjects(data.subjects, data.history).filter(s => (s.status || 'active') !== 'done');
   renderSessionIntelligence(data);
 
   const focusCard = document.getElementById('focus-card');
@@ -1263,7 +1237,10 @@ function renderSubjects() {
 
   const list = document.getElementById('subject-list');
   if (orderedSubjects.length === 0) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">Start by adding your first subject.<br>Then log one session so StudyTrail can guide what to focus on next.</div></div>`;
+    const hasCompletedOnly = data.subjects.length > 0;
+    list.innerHTML = hasCompletedOnly
+      ? `<div class="empty"><div class="empty-icon">✓</div><div class="empty-text">All your subjects are marked done.<br>Check the <strong>Completed Subjects</strong> page, or add a new one to keep going.</div></div>`
+      : `<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">Start by adding your first subject.<br>Then log one session so StudyTrail can guide what to focus on next.</div></div>`;
     return;
   }
 
@@ -1842,7 +1819,7 @@ function buildSidebar() {
   document.getElementById('sb-name').textContent = getName() || 'Student';
   const data = getData();
   const due = getDueReminders().length;
-  document.getElementById('sb-subjects').innerHTML = sortSubjects(data.subjects, data.history).map(s =>
+  document.getElementById('sb-subjects').innerHTML = sortSubjects(data.subjects, data.history).filter(s => (s.status || 'active') !== 'done').map(s =>
     `<button class="sidebar-btn sb-subject-btn ${currentSubjectId===s.id?'active':''}" data-id="${s.id}" onclick="openSubject('${s.id}')">
       <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${(s.customColor || COLORS[s.colorIdx%COLORS.length])};margin-right:8px;flex-shrink:0;vertical-align:middle"></span>${esc(s.name)}
     </button>`).join('');
@@ -3398,7 +3375,6 @@ function saveData(d) {
   updateBackupStatus();
   updateStreak();
   checkA2HS();
-  renderBackupReminder();
   const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active');
 
   // 2. If token exists, always try to load from Gist on open
