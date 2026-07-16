@@ -144,6 +144,7 @@
     .subject-name { font-weight:600; font-size:0.95rem; flex:1; cursor:pointer; }
     .subject-name:hover { color:#2d6a4f; }
     .subject-status { font-size:0.7rem; padding:3px 9px; border-radius:20px; font-weight:500; cursor:pointer; border:none; flex-shrink:0; }
+    select.subject-status { appearance:none; -webkit-appearance:none; padding:3px 22px 3px 9px; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M1 3l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>"); background-repeat:no-repeat; background-position:right 7px center; }
     .ss-active { background:#d8f3dc; color:#2d6a4f; }
     .ss-onhold { background:#fdf0e0; color:#b5651d; }
     .ss-done   { background:#f0f0ec; color:#666; }
@@ -441,7 +442,11 @@
         <div style="display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap">
           <div id="detail-color-dot" style="width:12px;height:12px;border-radius:50%;flex-shrink:0;cursor:pointer" onclick="openColorPickerForCurrent()" title="Change colour"></div>
           <div class="page-title" id="detail-title"></div>
-          <button id="detail-status-btn" class="subject-status" onclick="cycleSubjectStatus()"></button>
+          <select id="detail-status-select" class="subject-status" onchange="setSubjectStatusFromDetail(this.value)" title="Change status">
+            <option value="active">Studying</option>
+            <option value="onhold">On Hold</option>
+            <option value="done">Done</option>
+          </select>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
           <button class="btn btn-gray btn-sm" onclick="openAddTopic()">+ Topic</button>
@@ -1035,7 +1040,6 @@ let editingSessionId = null;  // null = new session, string = editing existing
 
 const COLORS = ['#2d6a4f','#1d5f8a','#7b4dbd','#b5651d','#c0392b','#16a085','#8b4513','#555'];
 const STATUS_META  = { active:{label:'Studying',cls:'ss-active'}, onhold:{label:'On Hold',cls:'ss-onhold'}, done:{label:'Done',cls:'ss-done'} };
-const STATUS_CYCLE = ['active','onhold','done'];
 
 // ══ REMINDERS UTILS ══
 function getDueReminders() {
@@ -1291,7 +1295,11 @@ function renderSubjects() {
       <div class="subject-card-top">
         <div class="subject-dot" style="background:${color};cursor:pointer;border:2px solid transparent;box-sizing:content-box" onclick="openColorPicker('${s.id}')" title="Change colour"></div>
         <div class="subject-name" onclick="openSubject('${s.id}')">${esc(s.name)}</div>
-        <button class="subject-status ${sm.cls}" onclick="cycleStatusFromList('${s.id}')" title="Click to change">${sm.label}</button>
+        <select class="subject-status ${sm.cls}" onchange="setStatusFromList('${s.id}', this.value)" title="Change status">
+          <option value="active" ${(s.status||'active')==='active'?'selected':''}>Studying</option>
+          <option value="onhold" ${(s.status||'active')==='onhold'?'selected':''}>On Hold</option>
+          <option value="done"   ${(s.status||'active')==='done'?'selected':''}>Done</option>
+        </select>
         ${s.priority ? `<span class="smart-pill smart-warn" style="cursor:pointer" onclick="togglePriority('${s.id}')" title="Click to remove priority">⚡ Priority</span>` : ''}
         ${daysBadge} ${dueBadge} ${deadlineBadge(s)}
       </div>
@@ -1407,22 +1415,26 @@ function mergeSelectedSubjects() {
   toast(`Merged into "${parentName}" ✓`);
 }
 
-// ══ STATUS CYCLE ══
-function cycleStatusFromList(id) {
+// ══ STATUS DROPDOWN ══
+function setStatusFromList(id, status) {
   const data = getData();
   const s = data.subjects.find(s => s.id === id);
   if (!s) return;
-  s.status = STATUS_CYCLE[(STATUS_CYCLE.indexOf(s.status||'active')+1) % STATUS_CYCLE.length];
+  s.status = status;
+  s.doneAt = status === 'done' ? ts() : null;
   saveData(data); renderSubjects(); buildSidebar();
+  toast(`"${s.name}" set to ${STATUS_META[status].label}`);
 }
 
-function cycleSubjectStatus() {
+function setSubjectStatusFromDetail(status) {
   if (!currentSubjectId) return;
   const data = getData();
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
-  s.status = STATUS_CYCLE[(STATUS_CYCLE.indexOf(s.status||'active')+1) % STATUS_CYCLE.length];
-  saveData(data); renderSubjectDetail(); buildSidebar();
+  s.status = status;
+  s.doneAt = status === 'done' ? ts() : null;
+  saveData(data); renderSubjectDetail(); renderSubjects(); buildSidebar();
+  toast(`"${s.name}" set to ${STATUS_META[status].label}`);
 }
 
 // Direct setter — marks a subject Done in one click, from the list card.
@@ -1493,8 +1505,8 @@ function renderSubjectDetail() {
 
   const sm = STATUS_META[s.status||'active'];
   document.getElementById('detail-title').textContent = s.name;
-  const stBtn = document.getElementById('detail-status-btn');
-  stBtn.textContent = sm.label; stBtn.className = `subject-status ${sm.cls}`;
+  const stSel = document.getElementById('detail-status-select');
+  if (stSel) { stSel.value = s.status || 'active'; stSel.className = `subject-status ${sm.cls}`; }
   const markDoneBtn = document.getElementById('detail-mark-done-btn');
   if (markDoneBtn) markDoneBtn.style.display = (s.status || 'active') === 'done' ? 'none' : '';
   const colorDot = document.getElementById('detail-color-dot');
