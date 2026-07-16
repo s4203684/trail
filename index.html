@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyTrail</title>
-  <link rel="stylesheet" href="css/tasks.css">
-  <link rel="stylesheet" href="css/report.css">
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -406,13 +404,11 @@
     <a href="career_path.html"><button class="sidebar-section">🛣️Path</button></a>
     <div class="sidebar-section">Navigate</div>
     <button class="sidebar-btn" id="nav-home" onclick="showPage('subjects')">🏠 Home</button>
-    <button class="sidebar-btn" onclick="showPage('tasks')">📝 Tasks</button>
     <div class="sidebar-section">Subjects</div>
     <div id="sb-subjects"></div>
     <div class="sidebar-section">More</div>
     <button class="sidebar-btn" onclick="showPage('reminders')">🔔 Reminders<span id="sb-remind-count" class="sidebar-remind" style="display:none"></span></button>
     <button class="sidebar-btn" onclick="showPage('history')">📋 History</button>
-    <button class="sidebar-btn" onclick="showPage('report')">📊 Report</button>
     <button class="sidebar-btn" onclick="showPage('settings')">⚙ Settings</button>
   </nav>
 
@@ -426,6 +422,7 @@
           <input type="search" id="subject-search" placeholder="Search subjects…"
             oninput="filterSubjectCards(this.value)"
             style="width:180px;padding:7px 12px;font-size:0.85rem">
+          <button class="btn btn-gray" onclick="openMergeModal()">⇄ Merge Subjects</button>
           <button class="btn btn-green" onclick="openModal('modal-add-subject')">+ Add Subject</button>
         </div>
       </div>
@@ -526,43 +523,6 @@
       <div id="reminders-list"></div>
     </div>
 
-    <!-- TASKS (Todo + Calendar) -->
-    <div class="page" id="page-tasks">
-      <div class="page-header">
-        <div class="page-title">📝 Tasks & Calendar</div>
-      </div>
-      <div class="stats-strip" id="stats-strip"></div>
-      <div class="tabs">
-        <button class="tab active" data-tab="todos"    onclick="switchTab('todos')">Todos</button>
-        <button class="tab"        data-tab="calendar" onclick="switchTab('calendar')">Calendar</button>
-      </div>
-      <section class="view active" id="view-todos">
-        <div class="add-row">
-          <input type="text" id="new-label" placeholder="What needs doing?"
-                 onkeydown="if(event.key==='Enter')addTask()">
-          <input type="date" id="new-date">
-          <button class="btn btn-green" onclick="addTask()">+ Add</button>
-        </div>
-        <div class="filter-chips" id="filter-chips">
-          <button class="chip active" data-filter="all"     onclick="setFilter('all')">All</button>
-          <button class="chip"        data-filter="today"   onclick="setFilter('today')">Today</button>
-          <button class="chip"        data-filter="overdue" onclick="setFilter('overdue')">Overdue</button>
-          <button class="chip"        data-filter="week"    onclick="setFilter('week')">This week</button>
-          <button class="chip"        data-filter="done"    onclick="setFilter('done')">Done</button>
-        </div>
-        <ul class="todo-list" id="todo-list"></ul>
-      </section>
-      <section class="view" id="view-calendar">
-        <div class="cal-nav">
-          <button class="btn btn-gray btn-sm" onclick="shiftMonth(-1)">‹</button>
-          <div class="cal-month" id="cal-month"></div>
-          <button class="btn btn-gray btn-sm" onclick="shiftMonth(1)">›</button>
-        </div>
-        <div class="cal-grid" id="cal-grid"></div>
-        <div id="day-detail"></div>
-      </section>
-    </div>
-
     <!-- HISTORY -->
     <div class="page" id="page-history">
       <div class="page-header">
@@ -572,20 +532,6 @@
         </select>
       </div>
       <div id="history-list"></div>
-    </div>
-
-    <!-- REPORT -->
-    <div class="page" id="page-report">
-      <div class="page-header">
-        <div class="page-title">📊 Report</div>
-      </div>
-      <div class="report-period">
-        <button class="chip active" data-period="day"   onclick="setReportPeriod('day')">Today</button>
-        <button class="chip"        data-period="week"  onclick="setReportPeriod('week')">Last 7 days</button>
-        <button class="chip"        data-period="month" onclick="setReportPeriod('month')">Last 30 days</button>
-        <button class="chip"        data-period="all"   onclick="setReportPeriod('all')">All time</button>
-      </div>
-      <div id="report-content"></div>
     </div>
 
     <!-- SETTINGS -->
@@ -713,6 +659,26 @@
   </div>
 </div>
 
+<!-- MODAL: Merge Subjects -->
+<div class="overlay" id="modal-merge">
+  <div class="modal">
+    <h2>⇄ Merge Subjects</h2>
+    <p style="font-size:0.85rem;color:var(--ink4);margin-bottom:14px">Pick 2+ subjects to fold into one new parent subject. Each picked subject becomes a topic under the new subject — no history is lost.</p>
+    <div class="field">
+      <label>New parent subject name</label>
+      <input id="merge-parent-name" type="text" placeholder="e.g. Programming Languages">
+    </div>
+    <div class="field">
+      <label>Subjects to merge</label>
+      <div id="merge-subject-list" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="closeModal('modal-merge')">Cancel</button>
+      <button class="btn btn-green" onclick="mergeSelectedSubjects()">Merge</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Pinned Note -->
 <div class="overlay" id="modal-pinned-note">
   <div class="modal">
@@ -746,12 +712,6 @@
   <div class="modal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
       <h2 id="session-modal-title" style="margin:0">Log Session</h2>
-      <div id="session-time-input" style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.85rem;font-weight:500;color:var(--ink3)">⏱ Time studied:
-        <input type="number" id="s-hours"   min="0" max="24" value="0" style="width:60px;text-align:center;padding:4px 6px;font-size:0.85rem">
-        <span>h</span>
-        <input type="number" id="s-minutes" min="0" max="59" value="0" style="width:60px;text-align:center;padding:4px 6px;font-size:0.85rem">
-        <span>m</span>
-      </div>
       <div id="session-timer-display" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.85rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink3)">⏱ <span id="session-timer-text">00:00</span></div>
     </div>
 
@@ -1173,8 +1133,6 @@ function showPage(name) {
 
   if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
-  if (name === 'tasks')     { document.querySelector('[onclick="showPage(\'tasks\')"]').classList.add('active'); initTasksPage(); }
-  if (name === 'report')    { document.querySelector('[onclick="showPage(\'report\')"]').classList.add('active'); initReportPage(); }
   if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); renderBackupReminder(); }
   if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
 }
@@ -1374,6 +1332,82 @@ function addSubject() {
   renderSubjects();
   buildSidebar();
   toast(`"${name}" added`);
+}
+
+// ══ MERGE SUBJECTS ══
+function openMergeModal() {
+  const data = getData();
+  document.getElementById('merge-parent-name').value = '';
+  const list = document.getElementById('merge-subject-list');
+  if (data.subjects.length < 2) {
+    list.innerHTML = `<div style="color:#aaa;font-size:0.85rem">You need at least 2 subjects to merge.</div>`;
+  } else {
+    list.innerHTML = sortSubjects(data.subjects, data.history).map(s => `
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;padding:6px 8px;border:1px solid var(--border);border-radius:8px">
+        <input type="checkbox" value="${s.id}" style="width:auto" class="merge-check">
+        <span style="width:9px;height:9px;border-radius:50%;background:${s.customColor || COLORS[s.colorIdx % COLORS.length]};flex-shrink:0"></span>
+        ${esc(s.name)} <span style="color:var(--ink5);font-size:0.78rem">(${s.topics.length} topics)</span>
+      </label>`).join('');
+  }
+  openModal('modal-merge');
+}
+
+function mergeSelectedSubjects() {
+  const parentName = document.getElementById('merge-parent-name').value.trim();
+  const checked = Array.from(document.querySelectorAll('.merge-check:checked')).map(c => c.value);
+  if (!parentName) { toast('Enter a name for the new subject'); return; }
+  if (checked.length < 2) { toast('Pick at least 2 subjects to merge'); return; }
+
+  const data = getData();
+  const parent = {
+    id: uid(), name: parentName, colorIdx: data.subjects.length, status: 'active',
+    topics: [], stopped: '', pinnedNote: null, customColor: null, priority: false,
+    nextTodo: '', createdAt: ts(), deadlineTitle: '', deadlineDate: ''
+  };
+
+  checked.forEach(oldId => {
+    const old = data.subjects.find(s => s.id === oldId);
+    if (!old) return;
+
+    const topicSummary = old.topics.map(t => `${t.name} [${t.status}]`).join(', ');
+    const noteParts = [];
+    if (topicSummary)   noteParts.push('Topics: ' + topicSummary);
+    if (old.stopped)    noteParts.push('Last stopped: ' + old.stopped);
+    if (old.nextTodo)   noteParts.push('Next: ' + old.nextTodo);
+    if (old.pinnedNote) noteParts.push('Pinned: ' + old.pinnedNote);
+
+    const statusMap = { active:'doing', onhold:'todo', done:'done' };
+    const newTopic = {
+      id: uid(), name: old.name,
+      status: statusMap[old.status || 'active'] || 'doing',
+      note: noteParts.join('\n')
+    };
+    parent.topics.push(newTopic);
+
+    // Reassign every history entry that pointed at the old subject
+    data.history.forEach(h => {
+      if (h.subjectId === oldId) {
+        h.subjectId   = parent.id;
+        h.subjectName = parent.name;
+        h.topicId     = newTopic.id;
+        h.sessionType = newTopic.name;
+      }
+    });
+
+    // Remove old colour cache entry so it doesn't collide with the new topic's colour
+    delete _topicColorCache[old.name];
+  });
+
+  // Drop the merged subjects, add the new parent
+  data.subjects = data.subjects.filter(s => !checked.includes(s.id));
+  data.subjects.push(parent);
+
+  saveData(data);
+  closeModal('modal-merge');
+  currentSubjectId = null;
+  showPage('subjects');
+  buildSidebar();
+  toast(`Merged into "${parentName}" ✓`);
 }
 
 // ══ STATUS CYCLE ══
@@ -2312,9 +2346,8 @@ function openCheckin() {
   // Build topic chips and clear selection
   buildTopicChips(s.topics, null);
 
-  // Reset manual time inputs
-  document.getElementById('s-hours').value   = 0;
-  document.getElementById('s-minutes').value = 0;
+  // Start session timer
+  startSessionTimer();
 
   openModal('modal-session');
 }
@@ -2347,11 +2380,12 @@ function openEditSession(sessionId) {
   const editTopics = editSubject ? editSubject.topics : [];
   buildTopicChips(editTopics, h.topicId || null);
 
-  // Don't run timer for edits — populate manual time inputs from existing duration
+  // Don't run timer for edits — show existing duration if present
   stopSessionTimer();
-  const dur = h.duration || 0;
-  document.getElementById('s-hours').value   = Math.floor(dur / 3600);
-  document.getElementById('s-minutes').value = Math.floor((dur % 3600) / 60);
+  if (h.duration) {
+    document.getElementById('session-timer-display').style.display = 'flex';
+    document.getElementById('session-timer-text').textContent = formatDuration(h.duration);
+  }
 
   openModal('modal-session');
 }
@@ -2386,9 +2420,6 @@ function saveSession() {
     h.topicId     = topicId || null;
     h.remindOn    = remindOn || null;
     h.sessionType = editTopic ? editTopic.name : (topicId ? h.sessionType : null);
-    const editH = parseInt(document.getElementById('s-hours').value, 10)   || 0;
-    const editM = parseInt(document.getElementById('s-minutes').value, 10) || 0;
-    h.duration  = (editH * 3600) + (editM * 60);
     if (remindOn) h.remindDone = false;
     saveData(data);
     closeModal('modal-session');
@@ -2408,9 +2439,7 @@ function saveSession() {
       if (t) { t.status = status; if (notes) t.note = notes; }
     }
     const newTopic = topicId ? s.topics.find(t => t.id === topicId) : null;
-    const inH = parseInt(document.getElementById('s-hours').value, 10)   || 0;
-    const inM = parseInt(document.getElementById('s-minutes').value, 10) || 0;
-    const sessionDuration = (inH * 3600) + (inM * 60);
+    const sessionDuration = getSessionDuration();
     data.history.unshift({
       id: uid(),
       subjectId: currentSubjectId,
@@ -3282,7 +3311,5 @@ function saveData(d) {
 })();
 
 </script>
-<script src="js/tasks.js"></script>
-<script src="js/report.js"></script>
 </body>
 </html>
