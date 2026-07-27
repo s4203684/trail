@@ -183,6 +183,7 @@
         <div class="add-row">
           <input type="text" id="new-label" placeholder="What needs doing?"
                  onkeydown="if(event.key==='Enter')addTask()">
+          <select id="new-subject" style="width:auto;flex:0 0 auto"><option value="">No subject</option></select>
           <input type="date" id="new-date">
           <button class="btn btn-green" onclick="addTask()">+ Add</button>
         </div>
@@ -408,6 +409,16 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
       <h2 id="session-modal-title" style="margin:0">Log Session</h2>
       <div id="session-timer-display" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.85rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink3)">⏱ <span id="session-timer-text">00:00</span></div>
+    </div>
+
+    <div class="field">
+      <label>Time studied <span style="color:#aaa;font-weight:400">(auto-filled by the timer above — adjust if logging a past session)</span></label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="s-hours" min="0" max="23" placeholder="0" style="width:90px">
+        <span style="font-size:0.85rem;color:var(--ink4)">h</span>
+        <input type="number" id="s-minutes" min="0" max="59" placeholder="0" style="width:90px">
+        <span style="font-size:0.85rem;color:var(--ink4)">m</span>
+      </div>
     </div>
 
     <div class="field">

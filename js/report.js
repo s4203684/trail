@@ -221,7 +221,7 @@ function renderPersonalBests() {
     <div class="report-section">
       <h3>Personal bests <small>· all-time</small></h3>
       <div class="best-grid">
-        <div class="best-card">
+        <div class="best-card" ${longest.subjectId ? `style="cursor:pointer" onclick="jumpToSubject('${longest.subjectId}')"` : ''} title="${longest.subjectId ? 'Open ' + escapeReport(longest.subjectName || '') : ''}">
           <div class="best-icon">🏆</div>
           <div>
             <div class="best-label">Longest session</div>
