@@ -274,6 +274,8 @@ function showPage(name) {
   if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
   if (name === 'completed') { document.querySelector('[onclick="showPage(\'completed\')"]').classList.add('active'); renderCompletedSubjects(); }
+  if (name === 'tasks')     { document.querySelector('[onclick="showPage(\'tasks\')"]').classList.add('active'); initTasksPage(); }
+  if (name === 'report')    { document.querySelector('[onclick="showPage(\'report\')"]').classList.add('active'); initReportPage(); }
   if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); }
   if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
 }
