@@ -70,13 +70,6 @@
     .subject-card:hover, .session-entry:hover, .insight-card:hover { transform:translateY(-1px); }
     .smart-pill { display:inline-flex; align-items:center; gap:6px; font-size:0.72rem; padding:4px 10px; border-radius:999px; font-weight:600; }
 
-    /* ── Content-progress chip (e.g. "12/50 pages") shown next to a topic name ── */
-    .unit-progress-chip {
-      display:inline-block; font-size:0.68rem; font-weight:600;
-      padding:2px 8px; border-radius:999px; margin-left:6px;
-      background:#d8f3dc; color:#2d6a4f; vertical-align:middle;
-    }
-
     /* ── Session type chips (topic-name based, colour assigned dynamically) ── */
     .type-chip {
       display:inline-flex; align-items:center; gap:5px;

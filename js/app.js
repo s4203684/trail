@@ -14,10 +14,7 @@ function normalizeData(raw) {
         id: t && t.id ? t.id : uid(),
         name: t && t.name ? t.name : 'Untitled topic',
         status: t && t.status ? t.status : 'todo',
-        note: t && t.note ? t.note : '',
-        unit: t && t.unit ? t.unit : '',
-        target: Number.isFinite(t && t.target) ? t.target : 0,
-        doneUnits: Number.isFinite(t && t.doneUnits) ? t.doneUnits : 0
+        note: t && t.note ? t.note : ''
       })) : [],
       stopped: s && s.stopped ? s.stopped : '',
       pinnedNote: s && s.pinnedNote ? s.pinnedNote : null,
@@ -38,9 +35,6 @@ function normalizeData(raw) {
       next: h && h.next ? h.next : '',
       notes: h && h.notes ? h.notes : '',
       sessionType: h && h.sessionType ? h.sessionType : null,
-      duration: h && h.duration ? h.duration : null,
-      amount: h && Number.isFinite(h.amount) ? h.amount : null,
-      unit: h && h.unit ? h.unit : null,
       remindOn: h && h.remindOn ? h.remindOn : null,
       remindDone: !!(h && h.remindDone),
       at: h && h.at ? h.at : ts()
@@ -279,8 +273,6 @@ function showPage(name) {
   if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
   if (name === 'completed') { document.querySelector('[onclick="showPage(\'completed\')"]').classList.add('active'); renderCompletedSubjects(); }
-  if (name === 'tasks')     { document.querySelector('[onclick="showPage(\'tasks\')"]').classList.add('active'); initTasksPage(); }
-  if (name === 'report')    { document.querySelector('[onclick="showPage(\'report\')"]').classList.add('active'); initReportPage(); }
   if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); }
   if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
 }
@@ -424,7 +416,7 @@ function renderSubjects() {
     const done  = s.topics.filter(t => t.status==='done').length;
     const stuck = s.topics.filter(t => t.status==='stuck').length;
     const doing = s.topics.filter(t => t.status==='doing').length;
-    const progress = total > 0 ? Math.round(s.topics.reduce((sum,t) => sum + topicPct(t), 0) / total) : 0;
+    const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
     // Per-topic mini progress — show each topic as a small chip
     const topicChipsHtml = total > 0 ? s.topics.map(t => {
@@ -743,12 +735,11 @@ function renderSubjectDetail() {
         <div style="display:flex;align-items:center;gap:10px">
           <div style="cursor:grab;color:var(--ink5);padding:0 2px;font-size:1rem;line-height:1;user-select:none" title="Drag to reorder">⠿</div>
           <div style="flex:1;min-width:0">
-            <div class="topic-name" id="tname-display-${t.id}">${esc(t.name)} ${t.target > 0 ? `<span class="unit-progress-chip">${t.doneUnits}/${t.target} ${esc(t.unit || 'units')}</span>` : ''}</div>
+            <div class="topic-name" id="tname-display-${t.id}">${esc(t.name)}</div>
             <input id="tname-input-${t.id}" type="text" value="${esc(t.name)}"
               style="display:none;padding:4px 8px;font-size:0.9rem;border-radius:6px;border:1.5px solid #2d6a4f"
               onkeydown="topicRenameKey(event,'${t.id}')"
               onblur="cancelTopicRename('${t.id}')">
-            ${t.target > 0 ? `<div class="progress-row" style="margin-top:6px"><div class="progress-track"><div class="progress-fill" style="width:${topicPct(t)}%"></div></div><div style="font-size:0.72rem;color:var(--ink4);min-width:32px;text-align:right">${topicPct(t)}%</div></div>` : ''}
           </div>
           <select class="status-sel" onchange="changeTopicStatus('${t.id}',this.value)">
             <option value="todo"  ${t.status==='todo' ?'selected':''}>To Do</option>
@@ -757,16 +748,8 @@ function renderSubjectDetail() {
             <option value="stuck" ${t.status==='stuck'?'selected':''}>Stuck</option>
           </select>
           <button class="btn btn-ghost btn-sm" onclick="startTopicRename('${t.id}')" title="Rename">✏</button>
-          <button class="btn btn-ghost btn-sm" onclick="toggleTopicTarget('${t.id}')" title="Set target">🎯</button>
           <button class="btn btn-ghost btn-sm" onclick="toggleTopicNotes('${t.id}')" title="Notes">📝</button>
           <button class="btn btn-red btn-sm" onclick="deleteTopic('${t.id}')">×</button>
-        </div>
-        <div id="topic-target-area-${t.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-          <div class="row">
-            <div class="field flex1" style="margin:0"><label>Target amount</label><input type="number" min="0" id="ttarget-input-${t.id}" value="${t.target || ''}" placeholder="e.g. 50"></div>
-            <div class="field flex1" style="margin:0"><label>Unit</label><input type="text" id="tunit-input-${t.id}" value="${esc(t.unit || '')}" placeholder="pages, problems, chapters…"></div>
-          </div>
-          <button class="btn btn-green btn-sm" style="margin-top:8px" onclick="saveTopicTarget('${t.id}')">Save target</button>
         </div>
         <div id="topic-notes-area-${t.id}" style="display:${t.note ? 'block' : 'none'};margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
           <textarea
@@ -901,23 +884,11 @@ function selectTopicChip(topicId, topicName, bg, color) {
     // Sync dropdown
     document.getElementById('s-topic-sel').value = topicId;
   }
-  updateAmountUnitFromTopic(isAlreadySelected ? '' : topicId);
-}
-
-function updateAmountUnitFromTopic(topicId) {
-  const unitEl = document.getElementById('s-amount-unit');
-  if (!unitEl) return;
-  if (!topicId) return;
-  const data = getData();
-  let topic = null;
-  for (const s of data.subjects) { const t = s.topics.find(t => t.id === topicId); if (t) { topic = t; break; } }
-  if (topic && topic.unit) unitEl.value = topic.unit;
 }
 
 function syncTopicChipFromDropdown() {
   // When user changes the dropdown, highlight the matching chip
   const topicId = document.getElementById('s-topic-sel').value;
-  updateAmountUnitFromTopic(topicId);
   document.querySelectorAll('#s-topic-chips .type-btn').forEach(btn => {
     btn.classList.remove('selected');
     btn.style.background = '';
@@ -988,7 +959,6 @@ function renderHistory() {
           <span style="font-size:0.72rem;color:var(--ink5)">${time}</span>
           <strong style="font-size:0.875rem;color:var(--ink2)">${esc(h.subjectName)}</strong>
           ${sessionTypeBadge(h.sessionType)}
-          ${h.amount ? `<span style="font-size:0.72rem;color:#2d6a4f;background:#d8f3dc;padding:2px 8px;border-radius:20px;font-weight:600">📈 ${h.amount} ${esc(h.unit || 'units')}</span>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;line-height:1.5;font-size:0.875rem">${parts.join('')}</div>
       </div>`;
@@ -1214,7 +1184,7 @@ function exportSubjectSummary() {
     lines.push('-'.repeat(40));
     sessions.forEach((h, i) => {
       lines.push('');
-      lines.push(`[${i+1}] ${fmtDate(h.at)}${h.sessionType ? ' · ' + h.sessionType : ''}${h.duration ? ' · ' + formatDuration(h.duration) : ''}`);
+      lines.push(`[${i+1}] ${fmtDate(h.at)}${h.sessionType ? ' · ' + h.sessionType : ''}`);
       if (h.stopped) lines.push(`  Stopped at: ${h.stopped}`);
       if (h.next)    lines.push(`  Next:       ${h.next}`);
       if (h.notes)   lines.push(`  Notes:      ${h.notes}`);
@@ -1280,12 +1250,10 @@ function renderSessionLog(s, data) {
     }
 
     const typeBadge = sessionTypeBadge(h.sessionType);
-    const amountBadge = h.amount ? `<span style="font-size:0.72rem;color:#2d6a4f;background:#d8f3dc;padding:2px 8px;border-radius:20px;font-weight:600">📈 ${h.amount} ${esc(h.unit || 'units')}</span>` : '';
     return `<div class="${entryClass}" data-session-type="${h.sessionType || 'none'}">
       <div class="session-entry-header">
         <span class="session-date">${fmtDate(h.at)}</span>
         ${typeBadge}
-        ${amountBadge}
         ${remindBadge}
       </div>
 
@@ -1345,54 +1313,16 @@ function deleteCurrentSubject() {
 }
 
 // ══ TOPICS ══
-function openAddTopic() {
-  document.getElementById('f-topic-name').value = '';
-  const u = document.getElementById('f-topic-unit'); if (u) u.value = '';
-  const tg = document.getElementById('f-topic-target'); if (tg) tg.value = '';
-  openModal('modal-add-topic');
-}
+function openAddTopic() { document.getElementById('f-topic-name').value = ''; openModal('modal-add-topic'); }
 
 function addTopic() {
   const name = document.getElementById('f-topic-name').value.trim();
-  const unitEl = document.getElementById('f-topic-unit');
-  const targetEl = document.getElementById('f-topic-target');
-  const unit = unitEl ? unitEl.value.trim() : '';
-  const target = targetEl ? (parseFloat(targetEl.value) || 0) : 0;
   if (!name) { toast('Enter a topic name'); return; }
   const data = getData();
   const s = data.subjects.find(s => s.id === currentSubjectId);
   if (!s) return;
-  s.topics.push({ id:uid(), name, status:'todo', note:'', unit, target, doneUnits:0 });
+  s.topics.push({ id:uid(), name, status:'todo', note:'' });
   saveData(data); closeModal('modal-add-topic'); renderSubjectDetail(); toast('Topic added');
-}
-
-// ══ TOPIC TARGET (content-based progress) ══
-function topicPct(t) {
-  if (t.target > 0) return Math.min(100, Math.round((t.doneUnits / t.target) * 100));
-  return t.status === 'done' ? 100 : t.status === 'doing' ? 50 : t.status === 'stuck' ? 25 : 0;
-}
-
-function toggleTopicTarget(topicId) {
-  const area = document.getElementById('topic-target-area-' + topicId);
-  if (!area) return;
-  area.style.display = area.style.display === 'none' ? 'block' : 'none';
-}
-
-function saveTopicTarget(topicId) {
-  const targetEl = document.getElementById('ttarget-input-' + topicId);
-  const unitEl   = document.getElementById('tunit-input-' + topicId);
-  if (!targetEl || !unitEl) return;
-  const data = getData();
-  const s = data.subjects.find(s => s.id === currentSubjectId);
-  if (!s) return;
-  const t = s.topics.find(t => t.id === topicId);
-  if (!t) return;
-  t.target = parseFloat(targetEl.value) || 0;
-  t.unit   = unitEl.value.trim();
-  if (t.target > 0 && t.doneUnits > t.target) t.doneUnits = t.target;
-  saveData(data);
-  renderSubjectDetail();
-  toast('Target saved');
 }
 
 function changeTopicStatus(topicId, status) {
@@ -1530,44 +1460,6 @@ function topicDragEnd(event) {
   _dragTopicId = null;
 }
 
-// ══ SESSION TIMER ══
-let _timerStart  = null;
-let _timerTick   = null;
-
-function startSessionTimer() {
-  stopSessionTimer(); // clear any existing
-  _timerStart = Date.now();
-  const display = document.getElementById('session-timer-display');
-  const text    = document.getElementById('session-timer-text');
-  if (display) display.style.display = 'flex';
-  _timerTick = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - _timerStart) / 1000);
-    if (text) text.textContent = formatDuration(elapsed);
-  }, 1000);
-}
-
-function stopSessionTimer() {
-  clearInterval(_timerTick);
-  _timerTick  = null;
-  const display = document.getElementById('session-timer-display');
-  if (display) display.style.display = 'none';
-}
-
-function getSessionDuration() {
-  if (!_timerStart) return null;
-  return Math.floor((Date.now() - _timerStart) / 1000); // seconds
-}
-
-function formatDuration(seconds) {
-  if (!seconds || seconds < 0) return '0m';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
-}
-
 // ══ SESSION LOG MODAL ══
 function toggleReminderDate() {
   const on = document.getElementById('s-remind-on').checked;
@@ -1595,8 +1487,6 @@ function openCheckin() {
   document.getElementById('s-next').value    = s.nextTodo || '';
   document.getElementById('s-notes').value   = '';
   document.getElementById('s-status').value  = '';
-  const amtEl = document.getElementById('s-amount'); if (amtEl) amtEl.value = '';
-  const amtUnitEl = document.getElementById('s-amount-unit'); if (amtUnitEl) amtUnitEl.value = '';
   document.getElementById('s-remind-on').checked = false;
   document.getElementById('s-remind-date').value = '';
   document.getElementById('remind-date-row').style.display = 'none';
@@ -1606,13 +1496,6 @@ function openCheckin() {
 
   // Build topic chips and clear selection
   buildTopicChips(s.topics, null);
-
-  // Reset manual time fields — timer will auto-fill on save unless overridden
-  document.getElementById('s-hours').value = '';
-  document.getElementById('s-minutes').value = '';
-
-  // Start session timer
-  startSessionTimer();
 
   openModal('modal-session');
 }
@@ -1630,8 +1513,6 @@ function openEditSession(sessionId) {
   document.getElementById('s-next').value    = h.next || '';
   document.getElementById('s-notes').value   = h.notes || '';
   document.getElementById('s-status').value  = '';
-  const amtEl = document.getElementById('s-amount'); if (amtEl) amtEl.value = h.amount != null ? h.amount : '';
-  const amtUnitEl = document.getElementById('s-amount-unit'); if (amtUnitEl) amtUnitEl.value = h.unit || '';
 
   const sel = document.getElementById('s-topic-sel');
   sel.innerHTML = '<option value="">— No specific topic —</option>' +
@@ -1647,13 +1528,6 @@ function openEditSession(sessionId) {
   const editTopics = editSubject ? editSubject.topics : [];
   buildTopicChips(editTopics, h.topicId || null);
 
-  // Don't run timer for edits — populate manual fields with existing duration
-  stopSessionTimer();
-  const durH = Math.floor((h.duration || 0) / 3600);
-  const durM = Math.floor(((h.duration || 0) % 3600) / 60);
-  document.getElementById('s-hours').value   = durH || '';
-  document.getElementById('s-minutes').value = durM || '';
-
   openModal('modal-session');
 }
 
@@ -1664,16 +1538,8 @@ function saveSession() {
   const topicId = document.getElementById('s-topic-sel').value;
   const status  = document.getElementById('s-status').value;
   const remindOn = document.getElementById('s-remind-on').checked ? document.getElementById('s-remind-date').value : '';
-  const amtEl = document.getElementById('s-amount');
-  const amtUnitEl = document.getElementById('s-amount-unit');
-  const amount = amtEl && amtEl.value !== '' ? (parseFloat(amtEl.value) || 0) : null;
-  const amountUnit = amtUnitEl ? amtUnitEl.value.trim() : '';
 
   if (!stopped && !next && !notes) { toast('Fill in at least one field'); return; }
-
-  const manualH = parseInt(document.getElementById('s-hours').value, 10) || 0;
-  const manualM = parseInt(document.getElementById('s-minutes').value, 10) || 0;
-  const manualDuration = (manualH * 3600) + (manualM * 60);
 
   const data = getData();
 
@@ -1683,25 +1549,12 @@ function saveSession() {
     const activeSubject = data.subjects.find(s => s.id === h.subjectId);
     const editTopic = topicId && activeSubject ? activeSubject.topics.find(t => t.id === topicId) : null;
 
-    // Undo the old amount's contribution to its old topic before applying the new one
-    if (h.topicId && h.amount) {
-      const oldSubject = data.subjects.find(s => s.topics.some(t => t.id === h.topicId));
-      const oldTopic = oldSubject ? oldSubject.topics.find(t => t.id === h.topicId) : null;
-      if (oldTopic) oldTopic.doneUnits = Math.max(0, oldTopic.doneUnits - h.amount);
-    }
-    if (editTopic && amount) {
-      editTopic.doneUnits = editTopic.doneUnits + amount;
-      if (editTopic.target > 0 && editTopic.doneUnits > editTopic.target) editTopic.doneUnits = editTopic.target;
-    }
-
     h.stopped     = stopped;
     h.next        = next;
     h.notes       = notes;
     h.topicId     = topicId || null;
     h.remindOn    = remindOn || null;
     h.sessionType = editTopic ? editTopic.name : (topicId ? h.sessionType : null);
-    h.amount      = amount;
-    h.unit        = amountUnit || (editTopic ? editTopic.unit : null) || null;
     if (remindOn) h.remindDone = false;
     saveData(data);
     closeModal('modal-session');
@@ -1717,14 +1570,7 @@ function saveSession() {
     if (stopped) s.stopped = stopped;
     if (next)    s.nextTodo = next;
     const newTopic = topicId ? s.topics.find(t => t.id === topicId) : null;
-    if (newTopic) {
-      if (status) { newTopic.status = status; if (notes) newTopic.note = notes; }
-      if (amount) {
-        newTopic.doneUnits = newTopic.doneUnits + amount;
-        if (newTopic.target > 0 && newTopic.doneUnits > newTopic.target) newTopic.doneUnits = newTopic.target;
-      }
-    }
-    const sessionDuration = getSessionDuration();
+    if (newTopic && status) { newTopic.status = status; if (notes) newTopic.note = notes; }
     data.history.unshift({
       id: uid(),
       subjectId: currentSubjectId,
@@ -1732,16 +1578,12 @@ function saveSession() {
       topicId: topicId || null,
       stopped, next, notes,
       sessionType: newTopic ? newTopic.name : null,
-      duration: sessionDuration,
-      amount: amount,
-      unit: amountUnit || (newTopic ? newTopic.unit : null) || null,
       remindOn: remindOn || null,
       remindDone: false,
       at: ts()
     });
     if (data.history.length > 300) data.history.length = 300;
     saveData(data);
-    stopSessionTimer();
     closeModal('modal-session');
     renderSubjectDetail();
     updateReminderBadge();
@@ -1754,12 +1596,6 @@ function saveSession() {
 function deleteSession(sessionId) {
   if (!confirm('Delete this session entry?')) return;
   const data = getData();
-  const h = data.history.find(h => h.id === sessionId);
-  if (h && h.topicId && h.amount) {
-    const sub = data.subjects.find(s => s.topics.some(t => t.id === h.topicId));
-    const t = sub ? sub.topics.find(t => t.id === h.topicId) : null;
-    if (t) t.doneUnits = Math.max(0, t.doneUnits - h.amount);
-  }
   data.history = data.history.filter(h => h.id !== sessionId);
   saveData(data);
   renderSubjectDetail();
@@ -2182,8 +2018,7 @@ function resetAll() {
 function exportData() {
   const data = getData();
   const name = getName();
-  const tasks = (typeof getTasks === 'function') ? getTasks() : [];
-  const payload = { version: 2, name, exportedAt: ts(), data, tasks };
+  const payload = { version: 2, name, exportedAt: ts(), data };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -2212,7 +2047,6 @@ function importData(event) {
       if (!confirm('This will replace all your current data with the backup. Continue?')) return;
       saveData(data);
       if (payload.name) saveName2(payload.name);
-      if (Array.isArray(payload.tasks) && typeof saveTasks === 'function') saveTasks(payload.tasks);
       document.getElementById('backup-status').textContent = 'Restored from backup: ' + file.name;
       toast('Data restored ✓');
       buildSidebar();
@@ -2302,8 +2136,7 @@ async function syncToGist(manual) {
   if (!token) return;
   const data  = getData();
   const name  = getName();
-  const tasks = (typeof getTasks === 'function') ? getTasks() : [];
-  const payload = JSON.stringify({ version:2, name, savedAt: ts(), data, tasks }, null, 2);
+  const payload = JSON.stringify({ version:2, name, savedAt: ts(), data }, null, 2);
 
   setSyncDot('spin');
   if (manual) showSyncIndicator('Syncing…', '');
@@ -2401,7 +2234,6 @@ async function loadFromGist(manual) {
       // Write to localStorage first before any renders
       localStorage.setItem('st2_data', JSON.stringify(remote));
       if (payload.name) saveName2(payload.name);
-      if (Array.isArray(payload.tasks) && typeof saveTasks === 'function') saveTasks(payload.tasks);
       // Now render with the newly written data
       buildSidebar();
       renderSubjects();
@@ -2464,7 +2296,6 @@ async function loadFromGistForced(token, gistId) {
     // Write to localStorage
     localStorage.setItem('st2_data', JSON.stringify(remote));
     if (payload.name) saveName2(payload.name);
-    if (Array.isArray(payload.tasks) && typeof saveTasks === 'function') saveTasks(payload.tasks);
 
     // Full UI refresh
     buildSidebar();
@@ -2599,7 +2430,10 @@ function updateSyncUI() {
 // Wrap saveData to auto-sync after every save (debounced + in-flight guard)
 let _syncTimer = null;
 let _syncInFlight = false;
-function triggerSync() {
+function saveData(d) {
+  const normalized = normalizeData(d);
+  localStorage.setItem('st2_data', JSON.stringify(normalized));
+  try { localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: normalized })); } catch(e) {}
   // Debounce: wait 1.5s after last save, skip if a sync is already running
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(async () => {
@@ -2607,12 +2441,6 @@ function triggerSync() {
     _syncInFlight = true;
     try { await syncToGist(false); } finally { _syncInFlight = false; }
   }, 1500);
-}
-function saveData(d) {
-  const normalized = normalizeData(d);
-  localStorage.setItem('st2_data', JSON.stringify(normalized));
-  try { localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: normalized })); } catch(e) {}
-  triggerSync();
 }
 
 // ══ BOOT ══

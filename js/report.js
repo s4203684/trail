@@ -1,10 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════
    report.js — Reports page for StudyTrail.
 
-   Redesigned: this page no longer answers "how many hours did I
-   study" — it answers "what did I study, how much of it, what's
-   done, and what needs focus next". Reads data.subjects (for topic
-   targets/progress) and data.history (for session-level activity).
+   Answers "what did I study and how much of it" — not hours. Reads
+   data.subjects (topic status) and data.history (session activity).
    Nothing is stored here; everything is computed at render time.
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -39,9 +37,8 @@ function getSessionsInRange() {
   return all.filter(s => new Date(s.at).getTime() >= cutoff);
 }
 
-/* ── 3) Topic progress helper (mirrors app.js topicPct) ──────────── */
+/* ── 3) Topic progress helper — status-based (todo/doing/done/stuck) ── */
 function reportTopicPct(t) {
-  if (t.target > 0) return Math.min(100, Math.round((t.doneUnits / t.target) * 100));
   return t.status === 'done' ? 100 : t.status === 'doing' ? 50 : t.status === 'stuck' ? 25 : 0;
 }
 
@@ -63,7 +60,6 @@ function renderReport() {
 
   box.innerHTML =
       renderSummaryCards(sessions)
-    + renderContentBreakdown(sessions)
     + renderActivityChart(sessions)
     + renderNeedsFocus(data)
     + renderCoverageBySubject(data)
@@ -100,28 +96,7 @@ function renderSummaryCards(sessions) {
     </div>`;
 }
 
-/* ── 6) Content logged — sums "amount" by unit (e.g. "42 pages · 12 problems") */
-function renderContentBreakdown(sessions) {
-  const byUnit = {};
-  sessions.forEach(h => {
-    if (!h.amount) return;
-    const key = h.unit || 'units';
-    byUnit[key] = (byUnit[key] || 0) + h.amount;
-  });
-  const entries = Object.entries(byUnit);
-  if (!entries.length) return '';
-
-  const chips = entries.map(([unit, total]) =>
-    `<span class="content-chip">${total} ${escapeReport(unit)}</span>`).join('');
-
-  return `
-    <div class="report-section">
-      <h3>Content logged <small>· this period</small></h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">${chips}</div>
-    </div>`;
-}
-
-/* ── 7) Activity chart — sessions per day (not hours) ─────────────── */
+/* ── 6) Activity chart — sessions per day (not hours) ─────────────── */
 function renderActivityChart(sessions) {
   if (currentPeriod === 'day') return '';
 
@@ -176,7 +151,7 @@ function renderNeedsFocus(data) {
     if ((s.status || 'active') !== 'active') return; // skip on-hold/done
     s.topics.forEach(t => {
       if (t.status === 'done') return;
-      rows.push({ subjectId: s.id, subjectName: s.name, topicName: t.name, pct: reportTopicPct(t), target: t.target, doneUnits: t.doneUnits, unit: t.unit, status: t.status });
+      rows.push({ subjectId: s.id, subjectName: s.name, topicName: t.name, pct: reportTopicPct(t), status: t.status });
     });
   });
   if (!rows.length) return '';
@@ -188,7 +163,7 @@ function renderNeedsFocus(data) {
     <div class="subject-row" onclick="jumpToSubject('${r.subjectId}')">
       <div class="subject-name" style="white-space:normal;line-height:1.35">${escapeReport(r.topicName)}<br><span style="font-size:0.72rem;color:var(--ink5);font-weight:400">${escapeReport(r.subjectName)}</span></div>
       <div class="subject-bar"><div class="subject-bar-fill" style="width:${r.pct}%"></div></div>
-      <div class="subject-stats">${r.target > 0 ? `${r.doneUnits}/${r.target} ${escapeReport(r.unit||'units')}` : r.pct + '%'}</div>
+      <div class="subject-stats">${r.status === 'doing' ? 'In progress' : r.status === 'stuck' ? 'Stuck' : 'Not started'} · ${r.pct}%</div>
     </div>`).join('');
 
   return `
@@ -221,42 +196,36 @@ function renderCoverageBySubject(data) {
     </div>`;
 }
 
-/* ── 10) Top topics — most content logged this period ─────────────── */
+/* ── 9) Top topics — most sessions logged this period ─────────────── */
 function renderTopTopics(sessions) {
   const byTopic = {};
   for (const s of sessions) {
     if (!s.sessionType) continue;
     const k = (s.subjectName || '') + '::' + s.sessionType;
-    if (!byTopic[k]) byTopic[k] = { topic: s.sessionType, subject: s.subjectName || '', amount: 0, unit: s.unit || '', sessions: 0 };
+    if (!byTopic[k]) byTopic[k] = { topic: s.sessionType, subject: s.subjectName || '', sessions: 0 };
     byTopic[k].sessions += 1;
-    if (s.amount) { byTopic[k].amount += s.amount; byTopic[k].unit = s.unit || byTopic[k].unit; }
   }
-  const list = Object.values(byTopic).sort((a, b) => (b.amount - a.amount) || (b.sessions - a.sessions)).slice(0, 5);
+  const list = Object.values(byTopic).sort((a, b) => b.sessions - a.sessions).slice(0, 5);
   if (!list.length) return '';
 
   return `
     <div class="report-section">
-      <h3>Top topics <small>· most covered this period</small></h3>
+      <h3>Top topics <small>· most sessions this period</small></h3>
       <ol class="topic-list">
         ${list.map(t => `
           <li>
             <span class="topic-name">${escapeReport(t.topic)}</span>
             <span class="topic-subject">${escapeReport(t.subject)}</span>
-            <span class="topic-time">${t.amount > 0 ? `${t.amount} ${escapeReport(t.unit||'units')}` : `${t.sessions} session${t.sessions===1?'':'s'}`}</span>
+            <span class="topic-time">${t.sessions} session${t.sessions===1?'':'s'}</span>
           </li>`).join('')}
       </ol>
     </div>`;
 }
 
-/* ── 11) Personal bests (all-time) ────────────────────────────────── */
+/* ── 10) Personal bests (all-time) ────────────────────────────────── */
 function renderPersonalBests(data) {
   const all = data.history || [];
   if (!all.length) return '';
-
-  const withAmount = all.filter(h => h.amount);
-  const bestSession = withAmount.length
-    ? withAmount.reduce((a, b) => (b.amount > a.amount ? b : a), withAmount[0])
-    : null;
 
   let closest = null;
   (data.subjects || []).forEach(s => s.topics.forEach(t => {
@@ -267,22 +236,28 @@ function renderPersonalBests(data) {
 
   const doneTopicsTotal = (data.subjects || []).reduce((sum, s) => sum + s.topics.filter(t => t.status === 'done').length, 0);
 
+  // Subject with the most sessions logged (all-time) — a proxy for "most studied"
+  const bySubject = {};
+  all.forEach(h => { if (h.subjectId) bySubject[h.subjectId] = (bySubject[h.subjectId] || { name: h.subjectName, count: 0 }); if (h.subjectId) bySubject[h.subjectId].count++; });
+  let mostActive = null;
+  for (const k in bySubject) if (!mostActive || bySubject[k].count > mostActive.count) mostActive = bySubject[k];
+
   const cards = [];
-  if (bestSession) {
+  if (mostActive) {
     cards.push(`
       <div class="best-card">
-        <div class="best-icon">🏆</div>
+        <div class="best-icon">🔥</div>
         <div>
-          <div class="best-label">Most completed in one session</div>
-          <div class="best-value">${bestSession.amount} ${escapeReport(bestSession.unit || 'units')}</div>
-          <div class="best-detail">${escapeReport(bestSession.subjectName || '')} · ${new Date(bestSession.at).toLocaleDateString()}</div>
+          <div class="best-label">Most studied subject</div>
+          <div class="best-value">${escapeReport(mostActive.name)}</div>
+          <div class="best-detail">${mostActive.count} session${mostActive.count===1?'':'s'} all-time</div>
         </div>
       </div>`);
   }
   if (closest) {
     cards.push(`
       <div class="best-card">
-        <div class="best-icon">🔥</div>
+        <div class="best-icon">🎯</div>
         <div>
           <div class="best-label">Closest to finishing</div>
           <div class="best-value">${closest.pct}%</div>

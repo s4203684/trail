@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyTrail</title>
 <link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/tasks.css">
-<link rel="stylesheet" href="css/report.css">
 </head>
 <body>
 <div class="shell">
@@ -32,14 +30,12 @@
     <a href="career_path.html" style="text-decoration:none"><button class="sidebar-btn" style="width:100%">🛣️ Path</button></a>
     <div class="sidebar-section">Navigate</div>
     <button class="sidebar-btn" id="nav-home" onclick="showPage('subjects')">🏠 Home</button>
-    <button class="sidebar-btn" onclick="showPage('tasks')">📝 Tasks</button>
     <div class="sidebar-section">Subjects</div>
     <div id="sb-subjects"></div>
     <div class="sidebar-section">More</div>
     <button class="sidebar-btn" onclick="showPage('reminders')">🔔 Reminders<span id="sb-remind-count" class="sidebar-remind" style="display:none"></span></button>
     <button class="sidebar-btn" onclick="showPage('history')">📋 History</button>
     <button class="sidebar-btn" onclick="showPage('completed')">✓ Completed<span id="sb-completed-count" class="sidebar-remind" style="display:none;background:#555"></span></button>
-    <button class="sidebar-btn" onclick="showPage('report')">📊 Report</button>
     <button class="sidebar-btn" onclick="showPage('settings')">⚙ Settings</button>
   </nav>
 
@@ -167,58 +163,6 @@
         </select>
       </div>
       <div id="history-list"></div>
-    </div>
-
-    <!-- TASKS (Todo + Calendar) -->
-    <div class="page" id="page-tasks">
-      <div class="page-header">
-        <div class="page-title">📝 Tasks & Calendar</div>
-      </div>
-      <div class="stats-strip" id="stats-strip"></div>
-      <div class="tabs">
-        <button class="tab active" data-tab="todos"    onclick="switchTab('todos')">Todos</button>
-        <button class="tab"        data-tab="calendar" onclick="switchTab('calendar')">Calendar</button>
-      </div>
-      <section class="view active" id="view-todos">
-        <div class="add-row">
-          <input type="text" id="new-label" placeholder="What needs doing?"
-                 onkeydown="if(event.key==='Enter')addTask()">
-          <select id="new-subject" style="width:auto;flex:0 0 auto"><option value="">No subject</option></select>
-          <input type="date" id="new-date">
-          <button class="btn btn-green" onclick="addTask()">+ Add</button>
-        </div>
-        <div class="filter-chips" id="filter-chips">
-          <button class="chip active" data-filter="all"     onclick="setFilter('all')">All</button>
-          <button class="chip"        data-filter="today"   onclick="setFilter('today')">Today</button>
-          <button class="chip"        data-filter="overdue" onclick="setFilter('overdue')">Overdue</button>
-          <button class="chip"        data-filter="week"    onclick="setFilter('week')">This week</button>
-          <button class="chip"        data-filter="done"    onclick="setFilter('done')">Done</button>
-        </div>
-        <ul class="todo-list" id="todo-list"></ul>
-      </section>
-      <section class="view" id="view-calendar">
-        <div class="cal-nav">
-          <button class="btn btn-gray btn-sm" onclick="shiftMonth(-1)">‹</button>
-          <div class="cal-month" id="cal-month"></div>
-          <button class="btn btn-gray btn-sm" onclick="shiftMonth(1)">›</button>
-        </div>
-        <div class="cal-grid" id="cal-grid"></div>
-        <div id="day-detail"></div>
-      </section>
-    </div>
-
-    <!-- REPORT -->
-    <div class="page" id="page-report">
-      <div class="page-header">
-        <div class="page-title">📊 Report</div>
-      </div>
-      <div class="report-period">
-        <button class="chip active" data-period="day"   onclick="setReportPeriod('day')">Today</button>
-        <button class="chip"        data-period="week"  onclick="setReportPeriod('week')">Last 7 days</button>
-        <button class="chip"        data-period="month" onclick="setReportPeriod('month')">Last 30 days</button>
-        <button class="chip"        data-period="all"   onclick="setReportPeriod('all')">All time</button>
-      </div>
-      <div id="report-content"></div>
     </div>
 
     <!-- COMPLETED SUBJECTS -->
@@ -396,10 +340,6 @@
   <div class="modal">
     <h2>Add Topic</h2>
     <div class="field"><label>Topic name</label><input id="f-topic-name" type="text" placeholder="e.g. CSS Grid, Arrays, Chapter 3…"></div>
-    <div class="row">
-      <div class="field flex1"><label>Target amount <span style="color:#aaa;font-weight:400">(optional)</span></label><input id="f-topic-target" type="number" min="0" placeholder="e.g. 50"></div>
-      <div class="field flex1"><label>Unit <span style="color:#aaa;font-weight:400">(optional)</span></label><input id="f-topic-unit" type="text" placeholder="pages, problems, chapters…"></div>
-    </div>
     <div class="modal-footer">
       <button class="btn btn-gray" onclick="closeModal('modal-add-topic')">Cancel</button>
       <button class="btn btn-green" onclick="addTopic()">Add</button>
@@ -410,19 +350,8 @@
 <!-- MODAL: Log / Edit Session -->
 <div class="overlay" id="modal-session">
   <div class="modal">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
+    <div style="margin-bottom:20px">
       <h2 id="session-modal-title" style="margin:0">Log Session</h2>
-      <div id="session-timer-display" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.85rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink3)">⏱ <span id="session-timer-text">00:00</span></div>
-    </div>
-
-    <div class="field">
-      <label>Time studied <span style="color:#aaa;font-weight:400">(auto-filled by the timer above — adjust if logging a past session)</span></label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="number" id="s-hours" min="0" max="23" placeholder="0" style="width:90px">
-        <span style="font-size:0.85rem;color:var(--ink4)">h</span>
-        <input type="number" id="s-minutes" min="0" max="59" placeholder="0" style="width:90px">
-        <span style="font-size:0.85rem;color:var(--ink4)">m</span>
-      </div>
     </div>
 
     <div class="field">
@@ -460,17 +389,6 @@
       </div>
     </div>
 
-    <div class="row" style="margin-bottom:14px">
-      <div class="field flex1" style="margin:0">
-        <label>How much did you complete? <span style="color:var(--ink5);font-weight:400">(optional)</span></label>
-        <input type="number" id="s-amount" min="0" step="any" placeholder="e.g. 5">
-      </div>
-      <div class="field" style="margin:0;width:150px">
-        <label>Unit</label>
-        <input type="text" id="s-amount-unit" placeholder="pages, problems…">
-      </div>
-    </div>
-
     <!-- Revision reminder -->
     <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:14px 16px;">
       <div style="font-weight:600;font-size:0.85rem;margin-bottom:10px;">🔔 Revision Reminder</div>
@@ -490,7 +408,7 @@
     </div>
 
     <div class="modal-footer">
-      <button class="btn btn-gray" onclick="stopSessionTimer();closeModal('modal-session')">Cancel</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-session')">Cancel</button>
       <button class="btn btn-green" id="session-save-btn" onclick="saveSession()">Save Session</button>
     </div>
   </div>
@@ -559,7 +477,5 @@
   </div>
 </div>
 <script src="js/app.js"></script>
-<script src="js/tasks.js"></script>
-<script src="js/report.js"></script>
 </body>
 </html>
