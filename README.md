@@ -135,7 +135,11 @@ Everything lives in `localStorage` under a couple of keys, all JSON-serialized:
 {
   id, name, colorIdx, customColor, status,      // 'active' | 'onhold' | 'done'
   doneAt,                                        // ISO timestamp, set when status becomes 'done', null otherwise
-  topics: [ { id, name, status, note } ],        // status: 'todo' | 'doing' | 'done' | 'stuck'
+  topics: [ { id, name, status, note, unit, target, doneUnits } ],
+  // status: 'todo' | 'doing' | 'done' | 'stuck'
+  // unit: free-text label ('pages','problems','chapters'…), '' = no content tracking set up
+  // target: total amount to complete for this topic, 0 = no target set
+  // doneUnits: cumulative amount completed so far (kept in sync by session logging/editing/deleting)
   stopped, nextTodo, pinnedNote, priority,
   createdAt, deadlineTitle, deadlineDate
 }
@@ -147,11 +151,20 @@ Everything lives in `localStorage` under a couple of keys, all JSON-serialized:
   id, subjectId, subjectName, topicId,
   stopped, next, notes,
   sessionType,      // mirrors the topic's name at time of logging (denormalized, not a live FK)
-  duration,         // seconds, from the session timer
+  duration,         // seconds, from the session timer (kept for the timer display; no longer used for reporting)
+  amount, unit,     // how much content was completed this session, e.g. amount:5, unit:'pages'
   remindOn, remindDone,
   at                // ISO timestamp
 }
 ```
+
+### Content-based progress (replaces hours-based reporting)
+
+As of this change, StudyTrail tracks **what** was studied and **how much of it**, not hours. Each topic can optionally have a `target` + `unit` (e.g. "50 pages"); logging a session against that topic with an `amount` adds to the topic's `doneUnits`. `topicPct(t)` (app.js) / `reportTopicPct(t)` (report.js — kept as a duplicate on purpose, see below) computes completion %: `doneUnits/target` if a target is set, else a rough status-based estimate (`done`=100, `doing`=50, `stuck`=25, `todo`=0).
+
+**Editing/deleting a session must keep `doneUnits` correct** — `saveSession()` un-applies the old amount from its old topic before applying the new one; `deleteSession()` subtracts the amount back out. If you add new code paths that create/mutate history entries with an `amount`, mirror this pattern or `doneUnits` will drift from reality.
+
+The Report page (`report.js`) no longer shows total/average time. It shows: sessions logged, topics/subjects touched, content logged by unit (e.g. "42 pages · 12 problems"), a sessions-per-day activity chart, a **Needs Focus** list (lowest-% incomplete topics, all-time), **Coverage by subject** (all topics' % complete), top topics by content logged, and personal bests (biggest single-session amount, topic closest to finishing, total topics completed).
 
 **Important:** `normalizeData()` is the single source of truth for shape/defaults — it runs on every read (`getData()`) and guards against malformed or legacy data. If you add a new field, add its default there first, or older stored data will come back `undefined`.
 
@@ -159,6 +172,7 @@ Everything lives in `localStorage` under a couple of keys, all JSON-serialized:
 
 - **Single source of truth, computed views**: nothing is stored pre-joined. `getFocusSubject()`, `getWeeklySummary()`, `sortSubjects()`, etc. all recompute from `subjects` + `history` at render time.
 - **`sessionType` is a denormalized copy**, not a foreign key. When a topic is renamed, `saveTopicRename()` walks `history` and updates matching `sessionType` strings. When subjects are merged, the merge function does the same reassignment. Keep this in mind if you add new topic-mutating features.
+- **A topic's `doneUnits` is a running total derived from session `amount` values**, not stored independently of history — any code that creates, edits, or deletes a history entry with an `amount` must add/subtract it from the matching topic's `doneUnits` (see `saveSession()` and `deleteSession()` in app.js). Skipping this makes the progress bar lie.
 - **`saveData(d)` is the only write path** — it normalizes, writes to `localStorage`, snapshots to `st2_backup`, and debounces a Gist sync (1.5s). Always go through it; don't write to `localStorage` directly elsewhere.
 - **Status changes affect three things that must stay in sync**: `status`, `doneAt`, and visibility filters. If you add a new status-setting code path, mirror what `setStatusFromList()` / `setSubjectDoneFromDetail()` / `reactivateSubject()` do (set `status`, set/clear `doneAt`, then `saveData()` + re-render).
 - **Done subjects are filtered out**, not deleted, from: the main subject list (`renderSubjects`), the sidebar shortcut list (`buildSidebar`), and focus suggestions (`getFocusSubject`). They're still fully present in `data.subjects` — only visible via the Completed Subjects page and still reachable via `openSubject()`.

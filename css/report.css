@@ -1,7 +1,15 @@
 /* ════════════════════════════════════════════════════════════════
-   report.css — Report page (Daily / Weekly / Monthly study stats).
-   Reuses .chip and .stat-card from tasks.css for consistency.
+   report.css — Report page: content coverage, not hours.
+   Answers "what did I study, how much, what's done, what needs
+   focus" — not "how many hours". Reuses .chip and .stat-card from
+   tasks.css for consistency.
    ════════════════════════════════════════════════════════════════ */
+
+/* Content-logged chips, e.g. "42 pages" */
+.content-chip {
+  display:inline-flex; align-items:center; font-size:0.8rem; font-weight:600;
+  padding:5px 12px; border-radius:999px; background:#d8f3dc; color:#2d6a4f;
+}
 
 /* ── 1) Period chips row ─────────────────────────────────────── */
 .report-period { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; }

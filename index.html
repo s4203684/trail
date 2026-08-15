@@ -340,6 +340,10 @@
   <div class="modal">
     <h2>Add Topic</h2>
     <div class="field"><label>Topic name</label><input id="f-topic-name" type="text" placeholder="e.g. CSS Grid, Arrays, Chapter 3…"></div>
+    <div class="row">
+      <div class="field flex1"><label>Target amount <span style="color:#aaa;font-weight:400">(optional)</span></label><input id="f-topic-target" type="number" min="0" placeholder="e.g. 50"></div>
+      <div class="field flex1"><label>Unit <span style="color:#aaa;font-weight:400">(optional)</span></label><input id="f-topic-unit" type="text" placeholder="pages, problems, chapters…"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-gray" onclick="closeModal('modal-add-topic')">Cancel</button>
       <button class="btn btn-green" onclick="addTopic()">Add</button>
@@ -387,6 +391,17 @@
           <option value="done">Done</option>
           <option value="stuck">Stuck</option>
         </select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:14px">
+      <div class="field flex1" style="margin:0">
+        <label>How much did you complete? <span style="color:var(--ink5);font-weight:400">(optional)</span></label>
+        <input type="number" id="s-amount" min="0" step="any" placeholder="e.g. 5">
+      </div>
+      <div class="field" style="margin:0;width:150px">
+        <label>Unit</label>
+        <input type="text" id="s-amount-unit" placeholder="pages, problems…">
       </div>
     </div>
 
