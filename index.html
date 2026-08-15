@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyTrail</title>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/tasks.css">
+<link rel="stylesheet" href="css/report.css">
 </head>
 <body>
 <div class="shell">
@@ -30,12 +32,14 @@
     <a href="career_path.html" style="text-decoration:none"><button class="sidebar-btn" style="width:100%">🛣️ Path</button></a>
     <div class="sidebar-section">Navigate</div>
     <button class="sidebar-btn" id="nav-home" onclick="showPage('subjects')">🏠 Home</button>
+    <button class="sidebar-btn" onclick="showPage('tasks')">📝 Tasks</button>
     <div class="sidebar-section">Subjects</div>
     <div id="sb-subjects"></div>
     <div class="sidebar-section">More</div>
     <button class="sidebar-btn" onclick="showPage('reminders')">🔔 Reminders<span id="sb-remind-count" class="sidebar-remind" style="display:none"></span></button>
     <button class="sidebar-btn" onclick="showPage('history')">📋 History</button>
     <button class="sidebar-btn" onclick="showPage('completed')">✓ Completed<span id="sb-completed-count" class="sidebar-remind" style="display:none;background:#555"></span></button>
+    <button class="sidebar-btn" onclick="showPage('report')">📊 Report</button>
     <button class="sidebar-btn" onclick="showPage('settings')">⚙ Settings</button>
   </nav>
 
@@ -163,6 +167,58 @@
         </select>
       </div>
       <div id="history-list"></div>
+    </div>
+
+    <!-- TASKS (Todo + Calendar) -->
+    <div class="page" id="page-tasks">
+      <div class="page-header">
+        <div class="page-title">📝 Tasks & Calendar</div>
+      </div>
+      <div class="stats-strip" id="stats-strip"></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="todos"    onclick="switchTab('todos')">Todos</button>
+        <button class="tab"        data-tab="calendar" onclick="switchTab('calendar')">Calendar</button>
+      </div>
+      <section class="view active" id="view-todos">
+        <div class="add-row">
+          <input type="text" id="new-label" placeholder="What needs doing?"
+                 onkeydown="if(event.key==='Enter')addTask()">
+          <select id="new-subject" style="width:auto;flex:0 0 auto"><option value="">No subject</option></select>
+          <input type="date" id="new-date">
+          <button class="btn btn-green" onclick="addTask()">+ Add</button>
+        </div>
+        <div class="filter-chips" id="filter-chips">
+          <button class="chip active" data-filter="all"     onclick="setFilter('all')">All</button>
+          <button class="chip"        data-filter="today"   onclick="setFilter('today')">Today</button>
+          <button class="chip"        data-filter="overdue" onclick="setFilter('overdue')">Overdue</button>
+          <button class="chip"        data-filter="week"    onclick="setFilter('week')">This week</button>
+          <button class="chip"        data-filter="done"    onclick="setFilter('done')">Done</button>
+        </div>
+        <ul class="todo-list" id="todo-list"></ul>
+      </section>
+      <section class="view" id="view-calendar">
+        <div class="cal-nav">
+          <button class="btn btn-gray btn-sm" onclick="shiftMonth(-1)">‹</button>
+          <div class="cal-month" id="cal-month"></div>
+          <button class="btn btn-gray btn-sm" onclick="shiftMonth(1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div id="day-detail"></div>
+      </section>
+    </div>
+
+    <!-- REPORT -->
+    <div class="page" id="page-report">
+      <div class="page-header">
+        <div class="page-title">📊 Report</div>
+      </div>
+      <div class="report-period">
+        <button class="chip active" data-period="day"   onclick="setReportPeriod('day')">Today</button>
+        <button class="chip"        data-period="week"  onclick="setReportPeriod('week')">Last 7 days</button>
+        <button class="chip"        data-period="month" onclick="setReportPeriod('month')">Last 30 days</button>
+        <button class="chip"        data-period="all"   onclick="setReportPeriod('all')">All time</button>
+      </div>
+      <div id="report-content"></div>
     </div>
 
     <!-- COMPLETED SUBJECTS -->
@@ -360,6 +416,16 @@
     </div>
 
     <div class="field">
+      <label>Time studied <span style="color:#aaa;font-weight:400">(auto-filled by the timer above — adjust if logging a past session)</span></label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="s-hours" min="0" max="23" placeholder="0" style="width:90px">
+        <span style="font-size:0.85rem;color:var(--ink4)">h</span>
+        <input type="number" id="s-minutes" min="0" max="59" placeholder="0" style="width:90px">
+        <span style="font-size:0.85rem;color:var(--ink4)">m</span>
+      </div>
+    </div>
+
+    <div class="field">
       <label>What did you do / where did you stop?</label>
       <textarea id="s-stopped" placeholder="e.g. Finished reading section 4.2, stopped before exercises…"></textarea>
     </div>
@@ -493,5 +559,7 @@
   </div>
 </div>
 <script src="js/app.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/report.js"></script>
 </body>
 </html>

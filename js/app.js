@@ -279,6 +279,8 @@ function showPage(name) {
   if (name === 'reminders') { document.querySelector('[onclick="showPage(\'reminders\')"]').classList.add('active'); renderReminders(); }
   if (name === 'history')   { document.querySelector('[onclick="showPage(\'history\')"]').classList.add('active'); renderHistory(); }
   if (name === 'completed') { document.querySelector('[onclick="showPage(\'completed\')"]').classList.add('active'); renderCompletedSubjects(); }
+  if (name === 'tasks')     { document.querySelector('[onclick="showPage(\'tasks\')"]').classList.add('active'); initTasksPage(); }
+  if (name === 'report')    { document.querySelector('[onclick="showPage(\'report\')"]').classList.add('active'); initReportPage(); }
   if (name === 'settings')  { document.querySelector('[onclick="showPage(\'settings\')"]').classList.add('active'); document.getElementById('settings-name').value = getName(); updateBackupStatus(); }
   if (name === 'subjects')  { currentSubjectId = null; renderSubjects(); buildSidebar(); const hb = document.getElementById('nav-home'); if(hb) hb.classList.add('active'); }
 }
@@ -1605,6 +1607,10 @@ function openCheckin() {
   // Build topic chips and clear selection
   buildTopicChips(s.topics, null);
 
+  // Reset manual time fields — timer will auto-fill on save unless overridden
+  document.getElementById('s-hours').value = '';
+  document.getElementById('s-minutes').value = '';
+
   // Start session timer
   startSessionTimer();
 
@@ -1641,12 +1647,12 @@ function openEditSession(sessionId) {
   const editTopics = editSubject ? editSubject.topics : [];
   buildTopicChips(editTopics, h.topicId || null);
 
-  // Don't run timer for edits — show existing duration if present
+  // Don't run timer for edits — populate manual fields with existing duration
   stopSessionTimer();
-  if (h.duration) {
-    document.getElementById('session-timer-display').style.display = 'flex';
-    document.getElementById('session-timer-text').textContent = formatDuration(h.duration);
-  }
+  const durH = Math.floor((h.duration || 0) / 3600);
+  const durM = Math.floor(((h.duration || 0) % 3600) / 60);
+  document.getElementById('s-hours').value   = durH || '';
+  document.getElementById('s-minutes').value = durM || '';
 
   openModal('modal-session');
 }
@@ -1664,6 +1670,10 @@ function saveSession() {
   const amountUnit = amtUnitEl ? amtUnitEl.value.trim() : '';
 
   if (!stopped && !next && !notes) { toast('Fill in at least one field'); return; }
+
+  const manualH = parseInt(document.getElementById('s-hours').value, 10) || 0;
+  const manualM = parseInt(document.getElementById('s-minutes').value, 10) || 0;
+  const manualDuration = (manualH * 3600) + (manualM * 60);
 
   const data = getData();
 
@@ -2172,7 +2182,8 @@ function resetAll() {
 function exportData() {
   const data = getData();
   const name = getName();
-  const payload = { version: 2, name, exportedAt: ts(), data };
+  const tasks = (typeof getTasks === 'function') ? getTasks() : [];
+  const payload = { version: 2, name, exportedAt: ts(), data, tasks };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -2201,6 +2212,7 @@ function importData(event) {
       if (!confirm('This will replace all your current data with the backup. Continue?')) return;
       saveData(data);
       if (payload.name) saveName2(payload.name);
+      if (Array.isArray(payload.tasks) && typeof saveTasks === 'function') saveTasks(payload.tasks);
       document.getElementById('backup-status').textContent = 'Restored from backup: ' + file.name;
       toast('Data restored ✓');
       buildSidebar();
@@ -2290,7 +2302,8 @@ async function syncToGist(manual) {
   if (!token) return;
   const data  = getData();
   const name  = getName();
-  const payload = JSON.stringify({ version:2, name, savedAt: ts(), data }, null, 2);
+  const tasks = (typeof getTasks === 'function') ? getTasks() : [];
+  const payload = JSON.stringify({ version:2, name, savedAt: ts(), data, tasks }, null, 2);
 
   setSyncDot('spin');
   if (manual) showSyncIndicator('Syncing…', '');
@@ -2388,6 +2401,7 @@ async function loadFromGist(manual) {
       // Write to localStorage first before any renders
       localStorage.setItem('st2_data', JSON.stringify(remote));
       if (payload.name) saveName2(payload.name);
+      if (Array.isArray(payload.tasks) && typeof saveTasks === 'function') saveTasks(payload.tasks);
       // Now render with the newly written data
       buildSidebar();
       renderSubjects();
@@ -2450,6 +2464,7 @@ async function loadFromGistForced(token, gistId) {
     // Write to localStorage
     localStorage.setItem('st2_data', JSON.stringify(remote));
     if (payload.name) saveName2(payload.name);
+    if (Array.isArray(payload.tasks) && typeof saveTasks === 'function') saveTasks(payload.tasks);
 
     // Full UI refresh
     buildSidebar();
@@ -2584,10 +2599,7 @@ function updateSyncUI() {
 // Wrap saveData to auto-sync after every save (debounced + in-flight guard)
 let _syncTimer = null;
 let _syncInFlight = false;
-function saveData(d) {
-  const normalized = normalizeData(d);
-  localStorage.setItem('st2_data', JSON.stringify(normalized));
-  try { localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: normalized })); } catch(e) {}
+function triggerSync() {
   // Debounce: wait 1.5s after last save, skip if a sync is already running
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(async () => {
@@ -2595,6 +2607,12 @@ function saveData(d) {
     _syncInFlight = true;
     try { await syncToGist(false); } finally { _syncInFlight = false; }
   }, 1500);
+}
+function saveData(d) {
+  const normalized = normalizeData(d);
+  localStorage.setItem('st2_data', JSON.stringify(normalized));
+  try { localStorage.setItem('st2_backup', JSON.stringify({ backedUpAt: ts(), data: normalized })); } catch(e) {}
+  triggerSync();
 }
 
 // ══ BOOT ══

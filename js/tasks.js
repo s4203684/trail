@@ -8,7 +8,7 @@
 const TASKS_KEY = 'st2_tasks';
 
 function getTasks()       { try { return JSON.parse(localStorage.getItem(TASKS_KEY)) || []; } catch { return []; } }
-function saveTasks(arr)   { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); }
+function saveTasks(arr)   { localStorage.setItem(TASKS_KEY, JSON.stringify(arr)); if (typeof triggerSync === 'function') triggerSync(); }
 
 /* Virtual tasks from subject deadlines — never stored, generated on the fly */
 function getDeadlineTasks() {
@@ -44,11 +44,14 @@ function addDays(dateStr, n) {
 
 /* ── 3) ACTIONS ─────────────────────────────────────────────────── */
 function addTask() {
-  const label = document.getElementById('new-label').value.trim();
-  const date  = document.getElementById('new-date').value || todayStr();
+  const label  = document.getElementById('new-label').value.trim();
+  const date   = document.getElementById('new-date').value || todayStr();
+  const subSel = document.getElementById('new-subject');
+  const subjectId = subSel ? subSel.value : '';
   if (!label) return;
-  pushTask(label, date);
+  pushTask(label, date, subjectId);
   document.getElementById('new-label').value = '';
+  if (subSel) subSel.value = '';
 }
 
 /* Used by the per-day quick-add in the calendar day-detail panel */
@@ -60,11 +63,26 @@ function addTaskForDay(dateStr) {
   pushTask(label, dateStr);
 }
 
-function pushTask(label, date) {
+/* Fills the subject dropdown in the add-row from the main app's subjects */
+function populateTaskSubjectSelect() {
+  const sel = document.getElementById('new-subject');
+  if (!sel || typeof getData !== 'function') return;
+  const subjects = (getData().subjects) || [];
+  sel.innerHTML = '<option value="">No subject</option>' +
+    subjects.map(s => `<option value="${s.id}">${escapeTaskHtml(s.name)}</option>`).join('');
+}
+
+function pushTask(label, date, subjectId) {
   const tasks = getTasks();
+  let subjectName = '';
+  if (subjectId && typeof getData === 'function') {
+    const s = (getData().subjects || []).find(s => s.id === subjectId);
+    if (s) subjectName = s.name;
+  }
   tasks.push({
     id: 't_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    label, date, done: false, createdAt: Date.now()
+    label, date, done: false, createdAt: Date.now(),
+    subjectId: subjectId || null, subjectName: subjectName || null
   });
   saveTasks(tasks);
   renderAll();
@@ -168,8 +186,10 @@ function renderTaskItem(t) {
               <span class="todo-date">${t.date}</span>
             </li>`;
   }
+  const subjectTag = t.subjectName ? `<span class="deadline-badge" style="background:var(--bg4);color:var(--ink3)">${escapeTaskHtml(t.subjectName)}</span>` : '';
   return `<li class="todo-item ${t.done ? 'done' : ''}" data-id="${t.id}">
             <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask('${t.id}')">
+            ${subjectTag}
             <span class="todo-label">${escapeTaskHtml(t.label)}</span>
             <span class="todo-date">${t.date}</span>
             <button class="btn btn-ghost btn-sm" onclick="deleteTask('${t.id}')">✕</button>
@@ -204,6 +224,16 @@ function renderCalendar() {
   const byDate = {};
   for (const t of getAllTasks()) (byDate[t.date] = byDate[t.date] || []).push(t);
 
+  // Days you actually studied (from session history), keyed by y-m-d string
+  const studiedDates = new Set();
+  if (typeof getData === 'function') {
+    try {
+      (getData().history || []).forEach(h => {
+        if (h.at) studiedDates.add(h.at.slice(0, 10));
+      });
+    } catch (e) {}
+  }
+
   const dow = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   let html = dow.map(d => `<div class="cal-dow">${d}</div>`).join('');
   for (let i = 0; i < firstDow; i++) html += `<div class="cal-day blank"></div>`;
@@ -216,8 +246,9 @@ function renderCalendar() {
     const classes = ['cal-day'];
     if (dateStr === today)        classes.push('today');
     if (dateStr === selectedDate) classes.push('selected');
+    if (studiedDates.has(dateStr)) classes.push('studied');
 
-    html += `<div class="${classes.join(' ')}" onclick="selectDay('${dateStr}')">
+    html += `<div class="${classes.join(' ')}" onclick="selectDay('${dateStr}')" ${studiedDates.has(dateStr) ? 'title="You studied on this day"' : ''}>
                <div class="cal-day-num">${d}</div>
                ${dotsFor(items)}
              </div>`;
@@ -287,5 +318,6 @@ function initTasksPage() {
     const dateInput = document.getElementById('new-date');
     if (dateInput) dateInput.value = todayStr();
   }
+  populateTaskSubjectSelect();
   renderAll();
 }
